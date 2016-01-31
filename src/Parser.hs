@@ -16,7 +16,9 @@ stmt = choice [ while
               ]
 
 expr :: Parser Expr
-expr = (Lit <$> literal) <|> (Var <$> var)
+expr = choice [ Lit <$> literal
+              , Var <$> var
+              ]
 
 assignment :: Parser Statement
 assignment = do
@@ -26,11 +28,11 @@ assignment = do
   return (lhs := rhs)
 
 literal :: Parser Literal
-literal = I <$> integer
-          <|> C <$> charLiteral
-          <|> T . Txt.pack <$> stringLiteral
-          <|> Unit <$ symbol "()"
-  where
+literal = choice [ I <$> integer
+                 , C <$> charLiteral
+                 , T . Txt.pack <$> stringLiteral
+                 , Unit <$ symbol "()"
+                 ]
 
 var :: Parser Text
 var = Txt.pack <$> identifier
