@@ -23,7 +23,7 @@ keyword = lexeme . string
 
 reservedWords = ["while"]
 
-integer = lexeme L.integer
+integer = lexeme L.integer <?> "integer"
 
 singleQuote :: Parser Char
 singleQuote = char '\''
@@ -34,7 +34,7 @@ stringLiteral = lexeme (doubleQuote *> manyTill L.charLiteral doubleQuote)
 
 charLiteral = lexeme (between singleQuote singleQuote L.charLiteral)
 
-identifier = check =<< lexeme baseIdentifier
+identifier = (check =<< lexeme baseIdentifier) <?> "identifier"
   where
     baseIdentifier = (:) <$> letterChar <*> many alphaNumChar
     check s = if s `elem` reservedWords

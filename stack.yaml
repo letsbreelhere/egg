@@ -4,4 +4,5 @@ packages:
 - '.'
 extra-deps:
 - megaparsec-4.2.0
+- readline-1.0.3.0
 resolver: lts-3.9

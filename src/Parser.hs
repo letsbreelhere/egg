@@ -1,6 +1,6 @@
 module Parser where
 
-import           Text.Megaparsec (many, choice, (<|>), try)
+import           Text.Megaparsec (many, choice, (<|>), try, (<?>))
 import           Text.Megaparsec.Text (Parser)
 import qualified Data.Text as Txt
 import           Data.Text (Text)
@@ -10,15 +10,15 @@ import           Lexer
 
 program = many stmt
 
-stmt = choice [ while
-              , assignment <* semicolon
+stmt = choice [ while <?> "while statement"
+              , assignment <* semicolon <?> "assignment"
               , E <$> expr <* semicolon
-              ]
+              ] <?> "statement"
 
 expr :: Parser Expr
-expr = choice [ Lit <$> literal
-              , Var <$> var
-              ]
+expr = choice [ Lit <$> literal <?> "literal"
+              , Var <$> var <?> "variable"
+              ] <?> "expression"
 
 assignment :: Parser Statement
 assignment = do
