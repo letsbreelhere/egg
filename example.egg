@@ -1,0 +1,7 @@
+while ( 10 ) {
+  "Hello!"; -- bar
+  foo = 123;
+  {-
+    Don't mind me!
+  -}
+}
