@@ -3,6 +3,8 @@ extra-package-dbs: []
 packages:
 - '.'
 extra-deps:
+- llvm-general-3.5.1.0
+- llvm-general-pure-3.5.0.0
 - megaparsec-4.2.0
 - readline-1.0.3.0
 resolver: lts-3.9
