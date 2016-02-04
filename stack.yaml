@@ -6,5 +6,5 @@ extra-deps:
 - llvm-general-3.5.1.0
 - llvm-general-pure-3.5.0.0
 - megaparsec-4.2.0
-- readline-1.0.3.0
+- cabal-helper-0.6.3.1
 resolver: lts-3.9
