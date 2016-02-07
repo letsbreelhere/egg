@@ -19,11 +19,16 @@ library
                      , Parser
                      , Types
                      , Lexer
+                     , Supply
                      , Compiler
   build-depends:       base >= 4.7 && < 5
                      , megaparsec
                      , text
                      , llvm-general
+                     , llvm-general-pure
+                     , containers
+                     , lens
+                     , mtl
   default-language:    Haskell2010
 
 executable eggi
