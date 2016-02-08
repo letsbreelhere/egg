@@ -27,4 +27,4 @@ main :: IO ()
 main = do
   contents <- T.readFile "example.egg"
   let Right parsed = runParser Egg.program "example.egg" contents
-  print $ toDefinition (head parsed)
+  putStrLn =<< codegen parsed
