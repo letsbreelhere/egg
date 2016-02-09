@@ -2,7 +2,6 @@ module Main where
 
 import           Lib
 import           Parser as Egg
-import qualified Data.Text.IO as T
 import           Text.Megaparsec (runParser)
 import           Codegen
 import           Compiler
@@ -25,6 +24,6 @@ codegen statements = withContext $ \context ->
 
 main :: IO ()
 main = do
-  contents <- T.readFile "example.egg"
+  contents <- readFile "example.egg"
   let Right parsed = runParser Egg.program "example.egg" contents
   putStrLn =<< codegen parsed

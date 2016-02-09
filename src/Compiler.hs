@@ -2,15 +2,21 @@ module Compiler where
 
 import           Control.Lens hiding ((|>))
 import           Control.Monad.State
+import           Data.Foldable (toList)
 import qualified Data.Map as M
 import           Data.Maybe (fromMaybe)
 import           Data.Sequence
-import           LLVM.General.AST (Instruction, Name, Named(..), Operand, Terminator)
+import           LLVM.General.AST (Instruction, Name, Named(..), Operand(..), Terminator)
 import qualified LLVM.General.AST as AST
+import           LLVM.General.AST.Type (i64)
 import           Supply (Supply)
 import qualified Supply
-import           Types hiding ((:=))
-import Data.Foldable (toList)
+import           Types.BlockState
+import           Types.Gen
+import           Types.GeneratorState
+
+localReference :: Name -> Operand
+localReference = LocalReference i64
 
 -- aka `instr`
 addInstruction :: Instruction -> Gen Operand

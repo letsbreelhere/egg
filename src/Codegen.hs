@@ -3,8 +3,6 @@ module Codegen where
 import           Compiler
 import           Control.Lens
 import           Control.Monad.State (execState)
-import           Data.Text (Text)
-import qualified Data.Text as T
 import           LLVM
 import           LLVM.General.AST (Definition(..), Operand(..), BasicBlock)
 import qualified LLVM.General.AST.Constant as Constant
@@ -26,9 +24,9 @@ generateSimpleOperand expr =
     Lit (I i) -> return $ ConstantOperand $ Constant.Int 64 (fromIntegral i)
     _         -> error $ "Not supported yet, doofus. Received: " ++ show expr ++ ""
 
-assignmentBlocks :: Text -> Expr -> [BasicBlock]
+assignmentBlocks :: String -> Expr -> [BasicBlock]
 assignmentBlocks vname expr = createBlocks . execCodegen $ do
-  var <- getVar (T.unpack vname)
+  var <- getVar vname
   value <- generateSimpleOperand expr
   store var value
   return ()
