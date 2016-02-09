@@ -1,38 +1,41 @@
 module Parser where
 
-import           Text.Megaparsec (many, choice, (<|>), try, (<?>))
+import           Text.Megaparsec (many, choice, (<|>), try, (<?>), sepBy)
 import           Text.Megaparsec.String (Parser)
 import qualified Text.Megaparsec.Lexer as L
 import           Types
 import           Lexer
 
-program = many stmt
-
-stmt = choice [ while <?> "while statement"
-              , assignment <* semicolon <?> "assignment"
-              , E <$> expr <* semicolon
-              ] <?> "statement"
+program = expr `sepBy` semicolon
 
 expr :: Parser Expr
 expr = choice [ Lit <$> literal <?> "literal"
               , Var <$> identifier <?> "variable"
-              ] <?> "expression"
+              , assignment <?> "assignment"
+              , function <?> "function definition"
+              , fnCall <?> "function call"
+              ]
 
-assignment :: Parser Statement
+assignment :: Parser Expr
 assignment = do
   lhs <- identifier
   symbol "="
   rhs <- expr
-  return (lhs := rhs)
+  return (Assign lhs rhs)
 
 literal :: Parser Literal
-literal = choice [ I <$> integer
-                 , C <$> charLiteral
-                 , S <$> stringLiteral
-                 , Unit <$ symbol "()"
-                 ]
+literal = choice [ I <$> integer ]
 
-while :: Parser Statement
-while = do
-  keyword "while"
-  While <$> parens expr <*> curlyBraces program
+function :: Parser Expr
+function = do
+  keyword "def"
+  name <- identifier
+  args <- parens (identifier `sepBy` comma)
+  body <- squareBraces expr
+  return (Function name args body)
+
+fnCall :: Parser Expr
+fnCall = do
+  name <- identifier
+  args <- parens (expr `sepBy` comma)
+  return (Call name args)

@@ -36,6 +36,9 @@ sub a b = addInstruction $ AST.Sub False False a b []
 store :: Operand -> Operand -> Gen Operand
 store ptr val = addInstruction $ AST.Store False ptr val Nothing 0 []
 
+alloca :: AST.Type -> Gen Operand
+alloca t = addInstruction $ AST.Alloca t Nothing 0 []
+
 -- aka `terminator`
 setTerminator :: Named Terminator -> Gen ()
 setTerminator term = currentBlockState . terminator .= Just term

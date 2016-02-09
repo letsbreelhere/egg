@@ -37,6 +37,9 @@ namedInstr = lens _namedInstr (\g s -> g { _namedInstr = s })
 blocks :: Lens' GeneratorState (Map Name BlockState)
 blocks = lens _blocks (\g s -> g { _blocks = s })
 
+blockCount :: Lens' GeneratorState Int
+blockCount = lens _blockCount (\g s -> g { _blockCount = s })
+
 defaultGeneratorState = GeneratorState
   { _unnamedInstr = Supply.fromList [1 ..]
   , _namedInstr = Supply.variableNames
@@ -47,13 +50,9 @@ defaultGeneratorState = GeneratorState
   }
 
 defaultBlockMap :: Map Name BlockState
-defaultBlockMap = M.singleton (Name "entry") entryBlockState
-  where entryBlockState = BlockState
-          { _index = 0
-          , _stack = Seq.empty
-          , _terminator = Nothing
-          }
+defaultBlockMap = M.singleton (Name "entry") (emptyBlock 0)
 
+-- aka setBlock
 currentBlockState :: (BlockState -> Identity BlockState) -> GeneratorState -> Identity GeneratorState
 currentBlockState = lens getCurrentBlockState setCurrentBlockState . _Just
   where

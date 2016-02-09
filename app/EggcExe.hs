@@ -15,7 +15,7 @@ import Control.Monad.Except
 runOrBarf :: ExceptT String IO a -> IO a
 runOrBarf = runExceptT >=> either fail return
 
-codegen :: [Statement] -> IO String
+codegen :: [Expr] -> IO String
 codegen statements = withContext $ \context ->
   runOrBarf $ withModuleFromAST context newast moduleLLVMAssembly
   where

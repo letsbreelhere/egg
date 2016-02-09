@@ -55,5 +55,8 @@ identifier = (check =<< lexeme baseIdentifier) <?> "identifier"
 semicolon :: Parser String
 semicolon = symbol ";"
 
+comma :: Parser String
+comma = symbol ","
+
 failWithMessage :: String -> Parser a
 failWithMessage msg = failure [Message msg]

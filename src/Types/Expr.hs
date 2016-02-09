@@ -1,14 +1,12 @@
-module Types.Expr where
+module Types.Expr (Expr(..), Literal(..)) where
 
 data Expr = Lit Literal
           | Var String
+          | Assign String Expr
+          | Function String [String] Expr
+          | Extern String [String]
           | Call String [Expr]
   deriving (Eq, Show)
-
-data Statement = E Expr
-               | (:=) String Expr
-               | While Expr [Statement]
-  deriving Show
 
 data Literal = I Integer
              | C Char

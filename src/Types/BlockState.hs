@@ -18,3 +18,6 @@ stack = lens _stack (\g s -> g { _stack = s })
 
 terminator :: Lens' BlockState (Maybe (Named Terminator))
 terminator = lens _terminator (\g s -> g { _terminator = s })
+
+emptyBlock :: Int -> BlockState
+emptyBlock i = BlockState { _index = i, _stack = Seq.empty, _terminator = Nothing }
