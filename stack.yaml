@@ -3,10 +3,9 @@ extra-package-dbs: []
 packages:
 - '.'
 extra-deps:
-- llvm-3.2.0.2
-- llvm-base-3.2.0.2
+- cabal-helper-0.6.3.1
+- ghc-mod-5.5.0.0
 - llvm-general-3.5.1.0
 - llvm-general-pure-3.5.0.0
 - megaparsec-4.2.0
-- type-level-0.2.4
 resolver: lts-3.9
