@@ -6,18 +6,19 @@ import qualified Text.Megaparsec.Lexer as L
 import           Types
 import           Lexer
 
-program = expr `sepBy` semicolon
+program = expr
 
 expr :: Parser Expr
 expr = choice [ Lit <$> literal <?> "literal"
-              , Var <$> identifier <?> "variable"
-              , assignment <?> "assignment"
               , function <?> "function definition"
               , fnCall <?> "function call"
+              , assignment <?> "assignment"
+              , Var <$> identifier <?> "variable"
               ]
 
 assignment :: Parser Expr
 assignment = do
+  keyword "let"
   lhs <- identifier
   symbol "="
   rhs <- expr

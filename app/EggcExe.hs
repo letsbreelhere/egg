@@ -15,12 +15,12 @@ import Control.Monad.Except
 runOrBarf :: ExceptT String IO a -> IO a
 runOrBarf = runExceptT >=> either fail return
 
-codegen :: [Expr] -> IO String
-codegen statements = withContext $ \context ->
+codegen :: Expr -> IO String
+codegen expr = withContext $ \context ->
   runOrBarf $ withModuleFromAST context newast moduleLLVMAssembly
   where
-    definitions = map toDefinition statements
-    newast = generateModule definitions "Egg!"
+    definition = toDefinition expr
+    newast = generateModule [definition] "Egg!"
 
 main :: IO ()
 main = do

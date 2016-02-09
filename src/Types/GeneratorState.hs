@@ -45,12 +45,9 @@ defaultGeneratorState = GeneratorState
   , _namedInstr = Supply.variableNames
   , _blockCount = 1
   , _symtab = M.empty
-  , _blocks = defaultBlockMap
-  , _activeBlock = Name "entry"
+  , _blocks = M.empty
+  , _activeBlock = Name "NOBLOCK"
   }
-
-defaultBlockMap :: Map Name BlockState
-defaultBlockMap = M.singleton (Name "entry") (emptyBlock 0)
 
 -- aka setBlock
 currentBlockState :: (BlockState -> Identity BlockState) -> GeneratorState -> Identity GeneratorState
