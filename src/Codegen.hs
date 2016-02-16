@@ -12,11 +12,12 @@ import           LLVM.General.AST.Type (i64)
 import           Types
 import qualified Types.Gen as Gen
 
-addBlock :: Gen Name
-addBlock = do
+addBlock :: String -> Gen Name
+addBlock str = do
   blockCount += 1
   ix <- use blockCount
-  name <- Name <$> freshNamed
+  let str' = str ++ "_"
+  name <- Name . (str' ++) <$> freshNamed
   blocks %= M.insert name (emptyBlock ix)
   return name
 
@@ -24,7 +25,7 @@ toDefinition :: Expr -> Definition
 toDefinition (Function name args body) = globalDefinition i64 name (map sigOf args) bodyBlocks
   where bodyBlocks = createBlocks res
         res = execCodegen $ do
-                entryName <- addBlock
+                entryName <- addBlock "entry"
                 activeBlock .= entryName
                 forM_ args $ \arg -> do
                   var <- alloca i64
