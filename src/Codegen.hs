@@ -24,13 +24,13 @@ toDefinition :: Expr -> Definition
 toDefinition (Function name args body) = globalDefinition i64 name (map sigOf args) bodyBlocks
   where bodyBlocks = createBlocks res
         res = execCodegen $ do
-                       entryName <- addBlock
-                       activeBlock .= entryName
-                       forM_ args $ \arg -> do
-                         var <- alloca i64
-                         store var (localReference (Name arg))
-                         Gen.assign arg var
-                       ret =<< generateSimpleOperand body
+                entryName <- addBlock
+                activeBlock .= entryName
+                forM_ args $ \arg -> do
+                  var <- alloca i64
+                  store var (localReference (Name arg))
+                  Gen.assign arg var
+                ret =<< generateSimpleOperand body
 toDefinition (Assign v e) = globalDefinition i64 "main" [] (assignmentBlocks v e)
 toDefinition expr = globalDefinition i64 "main" [] (mainBlocks expr)
 
@@ -45,6 +45,7 @@ generateSimpleOperand :: Expr -> Gen Operand
 generateSimpleOperand expr =
   case expr of
     Lit (I i) -> return $ ConstantOperand $ Constant.Int 64 (fromIntegral i)
+    Var v     -> load =<< getVar v
     _         -> error $ "Not supported yet, doofus. Received: " ++ show expr
 
 assignmentBlocks :: String -> Expr -> [BasicBlock]

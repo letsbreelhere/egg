@@ -1,18 +1,18 @@
 module Parser where
 
-import           Text.Megaparsec (many, choice, (<|>), try, (<?>), sepBy)
+import           Text.Megaparsec (many, choice, (<|>), try, (<?>), sepBy, eof)
 import           Text.Megaparsec.String (Parser)
 import qualified Text.Megaparsec.Lexer as L
 import           Types
 import           Lexer
 
-program = expr
+program = expr <* eof
 
 expr :: Parser Expr
 expr = choice [ Lit <$> literal <?> "literal"
               , function <?> "function definition"
-              , fnCall <?> "function call"
               , assignment <?> "assignment"
+              , try fnCall <?> "function call"
               , Var <$> identifier <?> "variable"
               ]
 

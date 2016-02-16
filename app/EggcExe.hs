@@ -25,6 +25,8 @@ codegen expr = withContext $ \context ->
 main :: IO ()
 main = do
   contents <- readFile "example.egg"
-  let Right parsed = runParser Egg.program "example.egg" contents
-  putStrLn $ "; Parsed from " ++ show parsed
-  putStrLn =<< codegen parsed
+  case runParser Egg.program "example.egg" contents of
+    Left err -> print err
+    Right parsed -> do
+      putStrLn $ "; Parsed from " ++ show parsed
+      putStrLn =<< codegen parsed
