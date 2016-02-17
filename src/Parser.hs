@@ -1,15 +1,23 @@
 module Parser where
 
-import           Text.Megaparsec (many, choice, (<|>), try, (<?>), sepBy, eof)
+import           Text.Megaparsec.Combinator
+import           Text.Megaparsec.Expr
 import           Text.Megaparsec.String (Parser)
-import qualified Text.Megaparsec.Lexer as L
 import           Types
 import           Lexer
 
 program = expr <* eof
 
 expr :: Parser Expr
-expr = choice [ Lit <$> literal <?> "literal"
+expr = makeExprParser expr' table
+
+table :: [[Operator Parser Expr]]
+table = [ [mkInfix "+" (BinOp "+")]
+        ]
+  where mkInfix name f = InfixL (symbol name *> pure f)
+
+expr' :: Parser Expr
+expr' = choice [ Lit <$> literal <?> "literal"
               , function <?> "function definition"
               , assignment <?> "assignment"
               , try fnCall <?> "function call"
@@ -41,3 +49,5 @@ fnCall = do
   name <- identifier
   args <- parens (expr `sepBy` comma)
   return (Call name args)
+
+expectedOps = ["+", "*"]

@@ -45,9 +45,13 @@ mainBlocks expr = createBlocks . execCodegen $ ret =<< generateSimpleOperand exp
 generateSimpleOperand :: Expr -> Gen Operand
 generateSimpleOperand expr =
   case expr of
-    Lit (I i) -> return $ ConstantOperand $ Constant.Int 64 (fromIntegral i)
-    Var v     -> load =<< getVar v
-    _         -> error $ "Not supported yet, doofus. Received: " ++ show expr
+    Lit (I i)     -> return $ ConstantOperand $ Constant.Int 64 (fromIntegral i)
+    Var v         -> load =<< getVar v
+    BinOp "+" l r -> do
+      l' <- generateSimpleOperand l
+      r' <- generateSimpleOperand r
+      add l' r'
+    _             -> error $ "Not supported yet, doofus. Received: " ++ show expr
 
 assignmentBlocks :: String -> Expr -> [BasicBlock]
 assignmentBlocks vname expr = createBlocks . execCodegen $ do

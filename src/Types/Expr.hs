@@ -6,6 +6,7 @@ data Expr = Lit Literal
           | Function String [String] Expr
           | Extern String [String]
           | Call String [Expr]
+          | BinOp String Expr Expr
   deriving (Eq, Show)
 
 data Literal = I Integer

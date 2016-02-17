@@ -2,8 +2,17 @@ module Lexer where
 
 import qualified Text.Megaparsec.Lexer as L
 import           Control.Monad (void)
-import           Text.Megaparsec
+import Text.Megaparsec as M hiding (eof, (<?>), try)
+import qualified Text.Megaparsec as M
 import           Text.Megaparsec.String
+
+try :: Parser a -> Parser a
+try = M.try
+
+eof :: Parser ()
+eof = M.eof
+
+(<?>) = (M.<?>)
 
 spaceConsumer :: Parser ()
 spaceConsumer = L.space (void spaceChar) (L.skipLineComment "--") (L.skipBlockComment "{-" "-}")
