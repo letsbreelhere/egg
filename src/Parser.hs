@@ -14,6 +14,7 @@ expr = choice [ Lit <$> literal <?> "literal"
               , assignment <?> "assignment"
               , try fnCall <?> "function call"
               , Var <$> identifier <?> "variable"
+              , parens expr
               ]
 
 assignment :: Parser Expr
