@@ -16,7 +16,6 @@ data GeneratorState =
          { _activeBlock :: Name
          , _blocks :: Map Name BlockState
          , _symtab :: SymbolTable
-         , _blockCount :: Int
          , _unnamedInstr :: Supply Word
          , _namedInstr :: Supply String
          }
@@ -37,13 +36,9 @@ namedInstr = lens _namedInstr (\g s -> g { _namedInstr = s })
 blocks :: Lens' GeneratorState (Map Name BlockState)
 blocks = lens _blocks (\g s -> g { _blocks = s })
 
-blockCount :: Lens' GeneratorState Int
-blockCount = lens _blockCount (\g s -> g { _blockCount = s })
-
 defaultGeneratorState = GeneratorState
   { _unnamedInstr = Supply.fromList [1 ..]
   , _namedInstr = Supply.variableNames
-  , _blockCount = 1
   , _symtab = M.empty
   , _blocks = M.empty
   , _activeBlock = Name "NOBLOCK"

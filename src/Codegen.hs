@@ -14,24 +14,21 @@ import qualified Types.Gen as Gen
 
 addBlock :: String -> Gen Name
 addBlock str = do
-  blockCount += 1
-  ix <- use blockCount
   let str' = str ++ "_"
   name <- Name . (str' ++) <$> freshNamed
-  blocks %= M.insert name (emptyBlock ix)
+  blocks %= M.insert name emptyBlock
   return name
 
 toDefinition :: Expr -> Definition
 toDefinition (Function name args body) = globalDefinition i64 name (map sigOf args) bodyBlocks
-  where bodyBlocks = createBlocks res
-        res = execCodegen $ do
-                entryName <- addBlock "entry"
-                activeBlock .= entryName
-                forM_ args $ \arg -> do
-                  var <- alloca i64
-                  store var (localReference (Name arg))
-                  Gen.assign arg var
-                ret =<< generateSimpleOperand body
+  where bodyBlocks = createBlocks . execCodegen $ do
+          entryName <- addBlock "entry"
+          activeBlock .= entryName
+          forM_ args $ \arg -> do
+            var <- alloca i64
+            store var (localReference (Name arg))
+            Gen.assign arg var
+          ret =<< generateSimpleOperand body
 toDefinition (Assign v e) = globalDefinition i64 "main" [] (assignmentBlocks v e)
 toDefinition expr = globalDefinition i64 "main" [] (mainBlocks expr)
 

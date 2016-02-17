@@ -7,8 +7,7 @@ import           LLVM.General.AST (Instruction, Name, Named(..), Operand(..), Te
 
 data BlockState =
        BlockState
-         { _index :: Int
-         , _stack :: Seq (Named Instruction)
+         { _stack :: Seq (Named Instruction)
          , _terminator :: Maybe (Named Terminator)
          }
   deriving Show
@@ -19,5 +18,5 @@ stack = lens _stack (\g s -> g { _stack = s })
 terminator :: Lens' BlockState (Maybe (Named Terminator))
 terminator = lens _terminator (\g s -> g { _terminator = s })
 
-emptyBlock :: Int -> BlockState
-emptyBlock i = BlockState { _index = i, _stack = Seq.empty, _terminator = Nothing }
+emptyBlock :: BlockState
+emptyBlock = BlockState { _stack = Seq.empty, _terminator = Nothing }
