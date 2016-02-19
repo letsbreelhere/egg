@@ -6,13 +6,9 @@ import           Text.Megaparsec.ShowToken (showToken)
 import           Text.Megaparsec (runParser)
 import           Control.Monad (forever)
 import           System.IO
-
-replRound :: IO ()
-replRound = do
-  putStr "egg> "
-  hFlush stdout
-  parsed <- Lexer.lex "" <$> readFile "example.egg"
-  either print (putStrLn . showToken) parsed
+import           Data.List (intercalate)
 
 main :: IO ()
-main = replRound
+main = do
+  parsed <- Lexer.lex "" <$> getContents
+  either print (putStrLn . intercalate ", " . map (show . showToken)) parsed
