@@ -20,8 +20,16 @@ type Parser = Parsec [Token]
 parse :: String -> [Token] -> Either ParseError Expr
 parse = runParser program
 
+keyword :: String -> Parser String
+keyword k = k <$ token (Keyword k)
+
 identifier :: String -> Parser String
 identifier i = i <$ token (Identifier i)
+
+anyIdentifier :: Parser String
+anyIdentifier = do
+  Identifier i <- satisfy isIdentifier
+  pure i
 
 operator :: String -> Parser String
 operator s = s <$ token (Operator s)
@@ -54,37 +62,39 @@ table = [ [mkInfix "+"]
   where mkInfix name = InfixL (BinOp name <$ operator name)
 
 expr' :: Parser Expr
-expr' = choice [ Expr.Literal <$> literal <?> "literal" ]
-              {-, function <?> "function definition"-}
-              {-, assignment <?> "assignment"-}
-              {-, try fnCall <?> "function call"-}
-              {-, Var <$> identifier <?> "variable"-}
-              {-, parens expr-}
-              {-]-}
+expr' = choice [ Expr.Literal <$> literal <?> "literal"
+               , function <?> "function definition"
+               , assignment <?> "assignment"
+               , try fnCall <?> "function call"
+               , Var <$> anyIdentifier <?> "variable"
+               , parens expr
+               ]
 
-{-assignment :: Parser Expr-}
-{-assignment = do-}
-  {-keyword "let"-}
-  {-lhs <- identifier-}
-  {-symbol "="-}
-  {-rhs <- expr-}
-  {-return (Assign lhs rhs)-}
+assignment :: Parser Expr
+assignment = do
+  keyword "let"
+  lhs <- anyIdentifier
+  operator "="
+  rhs <- expr
+  return (Assign lhs rhs)
 
 literal :: Parser Constant
 literal = choice [ I <$> anyInteger ]
 
-{-function :: Parser Expr-}
-{-function = do-}
-  {-keyword "def"-}
-  {-name <- identifier-}
-  {-args <- parens (identifier `sepBy` comma)-}
-  {-body <- squareBraces expr-}
-  {-return (Function name args body)-}
+parens = between (operator "(") (operator ")")
+squareBraces = between (operator "[") (operator "]")
+comma = operator ","
 
-{-fnCall :: Parser Expr-}
-{-fnCall = do-}
-  {-name <- identifier-}
-  {-args <- parens (expr `sepBy` comma)-}
-  {-return (Call name args)-}
+function :: Parser Expr
+function = do
+  keyword "def"
+  name <- anyIdentifier
+  args <- parens (anyIdentifier `sepBy` comma)
+  body <- squareBraces expr
+  return (Function name args body)
 
-{-expectedOps = ["+", "*"]-}
+fnCall :: Parser Expr
+fnCall = do
+  name <- anyIdentifier
+  args <- parens (expr `sepBy` comma)
+  return (Call name args)

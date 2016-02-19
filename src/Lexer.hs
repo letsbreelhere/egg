@@ -26,10 +26,12 @@ symbol :: String -> Lexer String
 symbol = L.symbol spaceConsumer
 
 lexOperator :: Lexer Token
-lexOperator = lexeme . choice . map operator' $ ["=", "+", "-", "(", "[", "{", "}", "]", ")"]
+lexOperator = lexeme . choice . map operator' $ operators
   where
     operator' :: String -> Lexer Token
     operator' s = Operator <$> symbol s
+
+operators = ["=", "+", "-", "(", "[", "{", "}", "]", ")", ","]
 
 lexKeyword = lexeme . choice . map keyword' $ reservedWords
   where
@@ -37,7 +39,7 @@ lexKeyword = lexeme . choice . map keyword' $ reservedWords
     keyword' w = Keyword <$> lexeme (string w)
 
 reservedWords :: [String]
-reservedWords = ["def", "if", "else", "while"]
+reservedWords = ["def", "if", "else", "while", "let"]
 
 integer :: Lexer Integer
 integer = lexeme L.integer <?> "integer"
