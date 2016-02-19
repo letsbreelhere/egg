@@ -1,16 +1,12 @@
-module Types.Expr (Expr(..), Literal(..)) where
+module Types.Expr (Expr(..)) where
 
-data Expr = Lit Literal
+import Types.Constant
+
+data Expr = Literal Constant
           | Var String
           | Assign String Expr
           | Function String [String] Expr
           | Extern String [String]
           | Call String [Expr]
           | BinOp String Expr Expr
-  deriving (Eq, Show)
-
-data Literal = I Integer
-             | C Char
-             | S String
-             | Unit
   deriving (Eq, Show)

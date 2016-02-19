@@ -1,71 +1,74 @@
+{-# LANGUAGE FlexibleInstances #-}
+
 module Lexer where
 
+import           Prelude hiding (lex)
 import qualified Text.Megaparsec.Lexer as L
+import           Text.Megaparsec.ShowToken
 import           Control.Monad (void)
-import Text.Megaparsec as M hiding (eof, (<?>), try)
-import qualified Text.Megaparsec as M
-import           Text.Megaparsec.String
+import           Text.Megaparsec
+import           Types.Constant
 
-try :: Parser a -> Parser a
-try = M.try
+data Token = Literal Constant
+           | Identifier String
+           | Keyword String
+           | Operator String
+  deriving Show
 
-eof :: Parser ()
-eof = M.eof
+instance ShowToken Token where
+  showToken t = case t of
+    Literal c -> showToken c
+    Identifier s -> s
+    Keyword s -> s
+    Operator s -> s
 
-(<?>) = (M.<?>)
+instance ShowToken [Token] where
+  showToken = unwords . map showToken
 
-spaceConsumer :: Parser ()
+type Lexer = Parsec String
+
+lex :: String -> String -> Either ParseError [Token]
+lex = runParser (lexGrammar <* eof)
+
+lexGrammar :: Lexer [Token]
+lexGrammar = many . choice $ [operator, keyword, literal, identifier]
+
+spaceConsumer :: Lexer ()
 spaceConsumer = L.space (void spaceChar) (L.skipLineComment "--") (L.skipBlockComment "{-" "-}")
 
-lexeme :: Parser a -> Parser a
+lexeme :: Lexer a -> Lexer a
 lexeme = L.lexeme spaceConsumer
 
-symbol :: String -> Parser String
+symbol :: String -> Lexer String
 symbol = L.symbol spaceConsumer
 
-curlyBraces :: Parser a -> Parser a
-curlyBraces = between (symbol "{") (symbol "}")
+operator :: Lexer Token
+operator = lexeme . choice . map operator' $ ["=", "+", "-", "(", "[", "{", "}", "]", ")"]
 
-parens :: Parser a -> Parser a
-parens = between (symbol "(") (symbol ")")
+operator' :: String -> Lexer Token
+operator' s = Operator <$> symbol s
 
-squareBraces :: Parser a -> Parser a
-squareBraces = between (symbol "[") (symbol "]")
-
-keyword :: String -> Parser String
-keyword w = lexeme (string w) <?> ("keyword " ++ show w)
+keyword = lexeme . choice . map keyword' $ reservedWords
 
 reservedWords :: [String]
-reservedWords = []
+reservedWords = ["def"]
 
-integer :: Parser Integer
+keyword' :: String -> Lexer Token
+keyword' w = Keyword <$> lexeme (string w)
+
+integer :: Lexer Integer
 integer = lexeme L.integer <?> "integer"
 
-singleQuote :: Parser Char
-singleQuote = char '\''
+literal :: Lexer Token
+literal = Literal . I <$> integer
 
-doubleQuote :: Parser Char
-doubleQuote = char '"'
-
-stringLiteral :: Parser String
-stringLiteral = lexeme (doubleQuote *> manyTill L.charLiteral doubleQuote) <?> "string literal"
-
-charLiteral :: Parser Char
-charLiteral = lexeme (between singleQuote singleQuote L.charLiteral) <?> "character literal"
-
-identifier :: Parser String
+identifier :: Lexer Token
 identifier = (check =<< lexeme baseIdentifier) <?> "identifier"
   where
     baseIdentifier = (:) <$> letterChar <*> many alphaNumChar
     check s = if s `elem` reservedWords
                 then failWithMessage $ "Identifier `" ++ s ++ "' is reserved"
-                else pure s
+                else pure (Identifier s)
 
-semicolon :: Parser String
-semicolon = symbol ";"
-
-comma :: Parser String
-comma = symbol ","
-
-failWithMessage :: String -> Parser a
+failWithMessage :: String -> Lexer a
 failWithMessage msg = failure [Message msg]
