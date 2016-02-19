@@ -1,11 +1,7 @@
 module Main where
 
-import           Lib
 import qualified Lexer
 import           Text.Megaparsec.ShowToken (showToken)
-import           Text.Megaparsec (runParser)
-import           Control.Monad (forever)
-import           System.IO
 import           Data.List (intercalate)
 
 main :: IO ()
