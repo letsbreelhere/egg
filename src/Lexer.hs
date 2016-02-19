@@ -48,12 +48,6 @@ lexLiteral :: Lexer Token
 lexLiteral = Literal . I <$> integer
 
 lexIdentifier :: Lexer Token
-lexIdentifier = (check =<< lexeme baseIdentifier) <?> "identifier"
+lexIdentifier = Identifier <$> lexeme baseIdentifier <?> "identifier"
   where
-    baseIdentifier = (:) <$> letterChar <*> many alphaNumChar
-    check s = if s `elem` reservedWords
-                then failWithMessage $ "Identifier `" ++ s ++ "' is reserved"
-                else pure (Identifier s)
-
-failWithMessage :: String -> Lexer a
-failWithMessage msg = failure [Message msg]
+    baseIdentifier = (:) <$> letterChar <*> many (alphaNumChar <|> char '_')

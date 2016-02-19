@@ -10,6 +10,8 @@ import           LLVM.General.AST (Name(..), Definition(..), Operand(..), BasicB
 import qualified LLVM.General.AST.Constant as Constant
 import           LLVM.General.AST.Type (i64)
 import           Types
+import           Types.Expr
+import           Types.Constant
 import qualified Types.Gen as Gen
 
 addBlock :: String -> Gen Name
@@ -42,7 +44,7 @@ mainBlocks expr = createBlocks . execCodegen $ ret =<< generateSimpleOperand exp
 generateSimpleOperand :: Expr -> Gen Operand
 generateSimpleOperand expr =
   case expr of
-    Lit (I i)     -> return $ ConstantOperand $ Constant.Int 64 (fromIntegral i)
+    Literal (I i)     -> return $ ConstantOperand $ Constant.Int 64 (fromIntegral i)
     Var v         -> load =<< getVar v
     BinOp "+" l r -> do
       l' <- generateSimpleOperand l

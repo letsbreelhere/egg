@@ -1,16 +1,16 @@
 module Main where
 
-import           Lib
-import           Parser as Egg
+import qualified Parser
+import qualified Lexer
 import           Text.Megaparsec (runParser)
 import           Codegen
 import           Compiler
 import           LLVM
 import qualified LLVM.General.AST as AST
-import LLVM.General.Module
-import LLVM.General.Context
-import Types
-import Control.Monad.Except
+import           LLVM.General.Module
+import           LLVM.General.Context
+import           Types
+import           Control.Monad.Except
 
 runOrBarf :: ExceptT String IO a -> IO a
 runOrBarf = runExceptT >=> either fail return
@@ -24,8 +24,9 @@ codegen expr = withContext $ \context ->
 
 main :: IO ()
 main = do
-  contents <- readFile "example.egg"
-  case runParser Egg.program "example.egg" contents of
+  contents <- getContents
+  let parsed = Parser.parse "example.egg" =<< Lexer.lex "example.egg" contents
+  case parsed of
     Left err -> print err
     Right parsed -> do
       putStrLn $ "; Parsed from " ++ show parsed
