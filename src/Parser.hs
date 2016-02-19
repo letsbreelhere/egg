@@ -1,17 +1,24 @@
-module Parser where
+module Parser (parse) where
 
-import           Text.Megaparsec.Prim hiding (token)
+import           Text.Megaparsec.Prim hiding (token, parse)
 import qualified Text.Megaparsec.Prim as Prim
 import           Text.Megaparsec.Combinator
 import           Text.Megaparsec.ShowToken
 import           Text.Megaparsec.Expr
 import           Text.Megaparsec.Error
 import           Text.Megaparsec.Pos (updatePosChar)
-import           Types.Token
+import           Types.Token hiding (Literal)
+import qualified Types.Token as Token
+import           Types.Expr hiding (Literal)
+import qualified Types.Expr as Expr
 import           Types.Constant
 import           Lexer
+import Control.Applicative ((<$))
 
 type Parser = Parsec [Token]
+
+parse :: String -> [Token] -> Either ParseError Expr
+parse = runParser program
 
 identifier :: String -> Parser String
 identifier i = i <$ token (Identifier i)
@@ -21,7 +28,7 @@ operator s = s <$ token (Operator s)
 
 anyInteger :: Parser Integer
 anyInteger = do
-  Literal l <- satisfy isLiteral
+  Token.Literal l <- satisfy isLiteral
   case l of
     I i -> pure i
     _ -> failure [Unexpected (showToken l), Expected "integer"]
@@ -36,18 +43,18 @@ satisfy p = Prim.token updatePosToken testToken
                         else Left . pure . Unexpected . showToken $ t
         updatePosToken _ pos _ = updatePosChar 0 pos ' '
 
-{-program = expr <* eof-}
+program = expr <* eof
 
-{-expr :: Parser Expr-}
-{-expr = makeExprParser expr' table-}
+expr :: Parser Expr
+expr = makeExprParser expr' table
 
-{-table :: [[Operator Parser Expr]]-}
-{-table = [ [mkInfix "+" (BinOp "+")]-}
-        {-]-}
-  {-where mkInfix name f = InfixL (symbol name *> pure f)-}
+table :: [[Operator Parser Expr]]
+table = [ [mkInfix "+"]
+        ]
+  where mkInfix name = InfixL (BinOp name <$ operator name)
 
-{-expr' :: Parser Expr-}
-{-expr' = choice [ Lit <$> literal <?> "literal"-}
+expr' :: Parser Expr
+expr' = choice [ Expr.Literal <$> literal <?> "literal" ]
               {-, function <?> "function definition"-}
               {-, assignment <?> "assignment"-}
               {-, try fnCall <?> "function call"-}
@@ -63,8 +70,8 @@ satisfy p = Prim.token updatePosToken testToken
   {-rhs <- expr-}
   {-return (Assign lhs rhs)-}
 
-{-literal :: Parser Literal-}
-{-literal = choice [ I <$> integer ]-}
+literal :: Parser Constant
+literal = choice [ I <$> anyInteger ]
 
 {-function :: Parser Expr-}
 {-function = do-}
