@@ -1,44 +1,54 @@
-module Codegen where
+module Codegen (toAssembly) where
 
 import           Compiler
 import           Control.Lens
+import           Control.Monad (forM_, (>=>))
+import           Control.Monad.Except (ExceptT, runExceptT)
 import           Control.Monad.State (execState)
-import           Control.Monad (forM_)
 import qualified Data.Map as M
-import           LLVM
-import           LLVM.General.AST (Name(..), Definition(..), Operand(..), BasicBlock, Type)
-import qualified LLVM.General.AST.Constant as Constant
+import           LLVM (generateModule, globalDefinition)
+import           LLVM.General.AST (Name(..), Definition, Operand(..), BasicBlock, Type)
 import           LLVM.General.AST.Type (i64)
-import           Types
-import           Types.Expr
-import           Types.Constant
+import qualified LLVM.General.AST.Constant as Constant
+import           LLVM.General.Context (withContext)
+import           LLVM.General.Module (withModuleFromAST, moduleLLVMAssembly)
+import           Types.Constant (Constant(..))
+import           Types.Expr (Expr(..))
+import           Types.Gen (Gen)
 import qualified Types.Gen as Gen
+import           Types.GeneratorState
+import           Types.BlockState (emptyBlock)
 
-addBlock :: String -> Gen Name
-addBlock str = do
-  let str' = str ++ "_"
-  name <- Name . (str' ++) <$> freshNamed
-  blocks %= M.insert name emptyBlock
-  return name
+toAssembly :: Expr -> IO String
+toAssembly expr = withContext $ \context ->
+  runOrBarf $ withModuleFromAST context generatedModule moduleLLVMAssembly
+  where
+    definition = toDefinition expr
+    generatedModule = generateModule [definition] "Egg!"
+    runOrBarf :: ExceptT String IO a -> IO a
+    runOrBarf = runExceptT >=> either fail return
 
 toDefinition :: Expr -> Definition
-toDefinition (Function name args body) = globalDefinition i64 name (map sigOf args) bodyBlocks
-  where bodyBlocks = createBlocks . execCodegen $ do
-          entryName <- addBlock "entry"
-          activeBlock .= entryName
-          forM_ args $ \arg -> do
-            var <- alloca i64
-            store var (localReference (Name arg))
-            Gen.assign arg var
-          ret =<< generateSimpleOperand body
-toDefinition (Assign v e) = globalDefinition i64 "main" [] (assignmentBlocks v e)
-toDefinition expr = globalDefinition i64 "main" [] (mainBlocks expr)
+toDefinition (Function name args body) = functionToDefinition name args body
+toDefinition e = error $ "Unsupported top level expression: " ++ show e
+
+functionToDefinition :: String -> [String] -> Expr -> Definition
+functionToDefinition name args body = globalDefinition i64 name (map sigOf args) (bodyBlocks args body)
+
+bodyBlocks args body = createBlocks . Gen.execCodegen $ do
+  entryName <- Gen.addBlock "entry"
+  activeBlock .= entryName
+  forM_ args $ \arg -> do
+    var <- alloca i64
+    store var (localReference (Name arg))
+    Gen.assign arg var
+  ret =<< generateSimpleOperand body
 
 sigOf :: String -> (Type, Name)
 sigOf v = (i64, Name v)
 
 mainBlocks :: Expr -> [BasicBlock]
-mainBlocks expr = createBlocks . execCodegen $ ret =<< generateSimpleOperand expr
+mainBlocks expr = createBlocks . Gen.execCodegen $ ret =<< generateSimpleOperand expr
 
 -- aka cgen
 generateSimpleOperand :: Expr -> Gen Operand
