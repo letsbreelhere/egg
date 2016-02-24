@@ -31,7 +31,7 @@ lexOperator = lexeme . choice . map operator' $ operators
     operator' :: String -> Lexer Token
     operator' s = Operator <$> symbol s
 
-operators = ["=", "+", "-", "(", "[", "{", "}", "]", ")", ","]
+operators = ["=", "+", "-", "(", "[", "{", "}", "]", ")", ",", ">", "<"]
 
 lexKeyword = lexeme . choice . map keyword' $ reservedWords
   where

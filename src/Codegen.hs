@@ -1,11 +1,11 @@
 module Codegen (toAssembly) where
 
-import           Compiler
 import           Control.Lens
 import           Control.Monad (forM_, (>=>))
 import           Control.Monad.Except (ExceptT, runExceptT)
 import           Control.Monad.State (execState)
 import qualified Data.Map as M
+import           Instructions
 import           LLVM (generateModule, globalDefinition)
 import           LLVM.General.AST (Name(..), Definition, Operand(..), BasicBlock, Type)
 import           LLVM.General.AST.Type (i64)
@@ -54,17 +54,48 @@ mainBlocks expr = createBlocks . Gen.execCodegen $ ret =<< generateSimpleOperand
 generateSimpleOperand :: Expr -> Gen Operand
 generateSimpleOperand expr =
   case expr of
-    Literal (I i)     -> return $ ConstantOperand $ Constant.Int 64 (fromIntegral i)
+    Literal (I i) -> return $ ConstantOperand $ Constant.Int 64 (fromIntegral i)
     Var v         -> load =<< getVar v
-    BinOp "+" l r -> do
-      l' <- generateSimpleOperand l
-      r' <- generateSimpleOperand r
-      add l' r'
+    BinOp o l r   -> generateOperator o l r
+    If p t e      -> generateIf p t e
     _             -> error $ "Not supported yet, doofus. Received: " ++ show expr
 
+lift2 :: Monad m => (a -> b -> m c) -> m a -> m b -> m c
+lift2 f mx my = do
+  x <- mx
+  y <- my
+  f x y
+
+generateIf :: Expr -> Expr -> Expr -> Gen Operand
+generateIf p t e = do
+  ifThen <- Gen.addBlock "if.then"
+  ifElse <- Gen.addBlock "if.else"
+  ifExit <- Gen.addBlock "if.exit"
+  predicate <- generateSimpleOperand p
+  let false = ConstantOperand (Constant.Int 64 0)
+  test <- ne false predicate
+  cbr test ifThen ifElse
+
+  activeBlock .= ifThen
+  thenValue <- generateSimpleOperand t
+  br ifExit
+  ifThen <- use activeBlock
+
+  activeBlock .= ifElse
+  elseValue <- generateSimpleOperand e
+  br ifExit
+  ifElse <- use activeBlock
+
+  activeBlock .= ifExit
+  phi i64 [(thenValue, ifThen), (elseValue, ifElse)]
+
+generateOperator :: String -> Expr -> Expr -> Gen Operand
+generateOperator o l r = case o of
+  "+" -> lift2 add (generateSimpleOperand l) (generateSimpleOperand r)
+  ">" -> lift2 gt (generateSimpleOperand l) (generateSimpleOperand r)
+
 assignmentBlocks :: String -> Expr -> [BasicBlock]
-assignmentBlocks vname expr = createBlocks . execCodegen $ do
+assignmentBlocks vname expr = createBlocks . Gen.execCodegen $ do
   var <- getVar vname
   value <- generateSimpleOperand expr
   store var value
-  return ()

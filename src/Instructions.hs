@@ -1,4 +1,4 @@
-module Compiler where
+module Instructions where
 
 import           Control.Lens hiding ((|>))
 import           Control.Monad.State
@@ -8,6 +8,7 @@ import           Data.Maybe (fromMaybe)
 import           Data.Sequence
 import           LLVM.General.AST (Instruction, Name, Named(..), Operand(..), Terminator)
 import qualified LLVM.General.AST as AST
+import           LLVM.General.AST.IntegerPredicate (IntegerPredicate(..))
 import           LLVM.General.AST.Type (i64)
 import           Supply (Supply)
 import qualified Supply
@@ -29,6 +30,18 @@ addInstruction instr = do
 
 add :: Operand -> Operand -> Gen Operand
 add a b = addInstruction $ AST.Add False False a b []
+
+cmp :: IntegerPredicate -> Operand -> Operand -> Gen Operand
+cmp c a b = addInstruction $ AST.ICmp c a b []
+
+phi :: AST.Type -> [(Operand, Name)] -> Gen Operand
+phi ty incoming = addInstruction $ AST.Phi ty incoming []
+
+ne :: Operand -> Operand -> Gen Operand
+ne = cmp NE
+
+gt :: Operand -> Operand -> Gen Operand
+gt = cmp SGT
 
 sub :: Operand -> Operand -> Gen Operand
 sub a b = addInstruction $ AST.Sub False False a b []
@@ -57,7 +70,7 @@ cbr cond tr fl = setTerminator $ AST.Do $ AST.CondBr cond tr fl []
 
 getVar :: String -> Gen Operand
 getVar vname = do
-  value <- M.lookup <$> pure vname <*> use symtab
+  value <- M.lookup vname <$> use symtab
   maybe (error $ "Couldn't find variable with name " ++ show vname) return value
 
 createBlocks :: GeneratorState -> [AST.BasicBlock]

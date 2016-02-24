@@ -9,4 +9,5 @@ data Expr = Literal Constant
           | Extern String [String]
           | Call String [Expr]
           | BinOp String Expr Expr
+          | If Expr Expr Expr
   deriving (Eq, Show)

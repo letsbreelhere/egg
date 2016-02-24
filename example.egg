@@ -1,3 +1,11 @@
-def main(x) [
-  let y = x + 1 + z(10, x)
+def foo(x) [
+  if x [
+    x
+  ] else [
+    x + 1
+  ]
+]
+
+def main() [
+  foo(0)
 ]

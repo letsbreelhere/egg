@@ -22,7 +22,7 @@ import qualified Supply
 newtype Gen a = Gen { unGen :: StateT GeneratorState Identity a }
   deriving (Functor, Applicative, Monad, MonadState GeneratorState)
 
-execCodegen :: Gen () -> GeneratorState
+execCodegen :: Gen a -> GeneratorState
 execCodegen g = execState (unGen g) defaultGeneratorState
 
 assign :: String -> Operand -> Gen ()

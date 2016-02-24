@@ -21,6 +21,7 @@ data GeneratorState =
          }
   deriving Show
 
+-- aka getBlock
 activeBlock :: Lens' GeneratorState Name
 activeBlock = lens _activeBlock (\g s -> g { _activeBlock = s })
 

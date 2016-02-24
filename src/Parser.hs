@@ -27,6 +27,7 @@ expr = makeExprParser expr' table
 
 table :: [[Operator Parser Expr]]
 table = [ [mkInfix "+"]
+        , [mkInfix ">"]
         ]
   where mkInfix name = InfixL (BinOp name <$ operator name)
 
@@ -34,6 +35,7 @@ expr' :: Parser Expr
 expr' = choice [ Expr.Literal <$> literal <?> "literal"
                , function <?> "function definition"
                , assignment <?> "assignment"
+               , ifExpr <?> "if statement"
                , try fnCall <?> "function call"
                , Var <$> anyIdentifier <?> "variable"
                , parens expr
@@ -46,6 +48,15 @@ assignment = do
   operator "="
   rhs <- expr
   return (Assign lhs rhs)
+
+ifExpr :: Parser Expr
+ifExpr = do
+  keyword "if"
+  predicate <- expr
+  thenClause <- squareBraces expr
+  keyword "else"
+  elseClause <- squareBraces expr
+  pure $ If predicate thenClause elseClause
 
 literal :: Parser Constant
 literal = choice [ I <$> anyInteger ]
