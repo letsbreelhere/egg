@@ -2,10 +2,10 @@ def foo(x) [
   if x [
     x + 10
   ] else [
-    x + 5
+    foo(x+1) + 5
   ]
 ]
 
 def main() [
-  foo(1)
+  foo(0)
 ]
