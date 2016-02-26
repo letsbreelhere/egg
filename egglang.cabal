@@ -19,6 +19,7 @@ library
                    , Types.BlockState
                    , Types.Constant
                    , Types.Expr
+                   , Types.FunDef
                    , Types.Gen
                    , Types.GeneratorState
                    , Types.Token

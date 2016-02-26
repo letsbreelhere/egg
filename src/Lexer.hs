@@ -14,7 +14,7 @@ lex :: String -> String -> Either ParseError [Token]
 lex = runParser (lexGrammar <* eof)
 
 lexGrammar :: Lexer [Token]
-lexGrammar = many . choice $ [lexOperator, lexKeyword, lexLiteral, lexIdentifier]
+lexGrammar = many . choice $ [lexOperator, lexLiteral, try lexKeyword, lexIdentifier]
 
 spaceConsumer :: Lexer ()
 spaceConsumer = L.space (void spaceChar) (L.skipLineComment "--") (L.skipBlockComment "{-" "-}")

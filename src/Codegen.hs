@@ -14,26 +14,27 @@ import           LLVM.General.Context (withContext)
 import           LLVM.General.Module (withModuleFromAST, moduleLLVMAssembly)
 import           Types.Constant (Constant(..))
 import           Types.Expr (Expr(..))
+import           Types.FunDef (FunDef(..))
 import           Types.Gen (Gen)
 import qualified Types.Gen as Gen
 import           Types.GeneratorState
 import           Types.BlockState (emptyBlock)
 
-toAssembly :: [Expr] -> IO String
+toAssembly :: [FunDef] -> IO String
 toAssembly expr = withContext $ \context ->
   runOrBarf $ withModuleFromAST context generatedModule moduleLLVMAssembly
   where
-    definitions = map toDefinition expr
+    definitions = map functionToDefinition expr
     generatedModule = generateModule definitions "Egg!"
     runOrBarf :: ExceptT String IO a -> IO a
     runOrBarf = runExceptT >=> either fail return
 
-toDefinition :: Expr -> Definition
-toDefinition (Function name args body) = functionToDefinition name args body
-toDefinition e = error $ "Unsupported top level expression: " ++ show e
-
-functionToDefinition :: String -> [String] -> Expr -> Definition
-functionToDefinition name args body = globalDefinition i64 name (map sigOf args) (bodyBlocks args body)
+functionToDefinition :: FunDef -> Definition
+functionToDefinition def =
+  let name = _name def
+      args = _args def
+      body = _body def
+  in globalDefinition i64 name (map sigOf args) (bodyBlocks args body)
 
 bodyBlocks args body = createBlocks . Gen.execCodegen $ do
   entryName <- Gen.addBlock "entry"

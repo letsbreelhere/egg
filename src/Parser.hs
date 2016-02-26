@@ -12,15 +12,24 @@ import qualified Types.Token as Token
 import           Types.Expr hiding (Literal)
 import qualified Types.Expr as Expr
 import           Types.Constant
+import           Types.FunDef
 import           Lexer
 import           Control.Applicative (many, (<$))
 
 type Parser = Parsec [Token]
 
-parse :: String -> [Token] -> Either ParseError [Expr]
+parse :: String -> [Token] -> Either ParseError [FunDef]
 parse = runParser program
 
-program = many expr <* eof
+program = many function <* eof
+
+function :: Parser FunDef
+function = do
+  keyword "def"
+  name <- anyIdentifier
+  args <- parens (anyIdentifier `sepBy` comma)
+  body <- squareBraces expr
+  return (FunDef name args body)
 
 expr :: Parser Expr
 expr = makeExprParser expr' table
@@ -33,7 +42,6 @@ table = [[mkInfix "+"], [mkInfix ">"]]
 expr' :: Parser Expr
 expr' = choice
           [ Expr.Literal <$> literal <?> "literal"
-          , function <?> "function definition"
           , assignment <?> "assignment"
           , ifExpr <?> "if statement"
           , try fnCall <?> "function call"
@@ -66,14 +74,6 @@ parens = between (operator "(") (operator ")")
 squareBraces = between (operator "[") (operator "]")
 
 comma = operator ","
-
-function :: Parser Expr
-function = do
-  keyword "def"
-  name <- anyIdentifier
-  args <- parens (anyIdentifier `sepBy` comma)
-  body <- squareBraces expr
-  return (Function name args body)
 
 fnCall :: Parser Expr
 fnCall = do
