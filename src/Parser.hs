@@ -13,33 +13,33 @@ import           Types.Expr hiding (Literal)
 import qualified Types.Expr as Expr
 import           Types.Constant
 import           Lexer
-import Control.Applicative ((<$))
+import           Control.Applicative (many, (<$))
 
 type Parser = Parsec [Token]
 
-parse :: String -> [Token] -> Either ParseError Expr
+parse :: String -> [Token] -> Either ParseError [Expr]
 parse = runParser program
 
-program = expr <* eof
+program = many expr <* eof
 
 expr :: Parser Expr
 expr = makeExprParser expr' table
 
 table :: [[Operator Parser Expr]]
-table = [ [mkInfix "+"]
-        , [mkInfix ">"]
-        ]
-  where mkInfix name = InfixL (BinOp name <$ operator name)
+table = [[mkInfix "+"], [mkInfix ">"]]
+  where
+    mkInfix name = InfixL (BinOp name <$ operator name)
 
 expr' :: Parser Expr
-expr' = choice [ Expr.Literal <$> literal <?> "literal"
-               , function <?> "function definition"
-               , assignment <?> "assignment"
-               , ifExpr <?> "if statement"
-               , try fnCall <?> "function call"
-               , Var <$> anyIdentifier <?> "variable"
-               , parens expr
-               ]
+expr' = choice
+          [ Expr.Literal <$> literal <?> "literal"
+          , function <?> "function definition"
+          , assignment <?> "assignment"
+          , ifExpr <?> "if statement"
+          , try fnCall <?> "function call"
+          , Var <$> anyIdentifier <?> "variable"
+          , parens expr
+          ]
 
 assignment :: Parser Expr
 assignment = do
@@ -59,10 +59,12 @@ ifExpr = do
   pure $ If predicate thenClause elseClause
 
 literal :: Parser Constant
-literal = choice [ I <$> anyInteger ]
+literal = choice [I <$> anyInteger]
 
 parens = between (operator "(") (operator ")")
+
 squareBraces = between (operator "[") (operator "]")
+
 comma = operator ","
 
 function :: Parser Expr
@@ -80,7 +82,6 @@ fnCall = do
   return (Call name args)
 
 -- Primitives
-
 withTycon :: (a -> Token) -> a -> Parser a
 withTycon con a = a <$ token (con a)
 
@@ -103,14 +104,15 @@ anyInteger = do
   Token.Literal l <- satisfy isLiteral
   case l of
     I i -> pure i
-    _ -> failure [Unexpected (showToken l), Expected "integer"]
+    _   -> failure [Unexpected (showToken l), Expected "integer"]
 
 token :: Token -> Parser Token
 token t = satisfy (== t) <?> showToken t
 
 satisfy :: (Token -> Bool) -> Parser Token
 satisfy p = Prim.token updatePosToken testToken
-  where testToken t = if p t
-                        then Right t
-                        else Left . pure . Unexpected . showToken $ t
-        updatePosToken _ pos _ = updatePosChar 0 pos ' '
+  where
+    testToken t = if p t
+                    then Right t
+                    else Left . pure . Unexpected . showToken $ t
+    updatePosToken _ pos _ = updatePosChar 0 pos ' '

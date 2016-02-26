@@ -19,12 +19,12 @@ import qualified Types.Gen as Gen
 import           Types.GeneratorState
 import           Types.BlockState (emptyBlock)
 
-toAssembly :: Expr -> IO String
+toAssembly :: [Expr] -> IO String
 toAssembly expr = withContext $ \context ->
   runOrBarf $ withModuleFromAST context generatedModule moduleLLVMAssembly
   where
-    definition = toDefinition expr
-    generatedModule = generateModule [definition] "Egg!"
+    definitions = map toDefinition expr
+    generatedModule = generateModule definitions "Egg!"
     runOrBarf :: ExceptT String IO a -> IO a
     runOrBarf = runExceptT >=> either fail return
 
@@ -54,17 +54,23 @@ mainBlocks expr = createBlocks . Gen.execCodegen $ ret =<< generateSimpleOperand
 generateSimpleOperand :: Expr -> Gen Operand
 generateSimpleOperand expr =
   case expr of
-    Literal (I i) -> return $ ConstantOperand $ Constant.Int 64 (fromIntegral i)
-    Var v         -> load =<< getVar v
-    BinOp o l r   -> generateOperator o l r
-    If p t e      -> generateIf p t e
-    _             -> error $ "Not supported yet, doofus. Received: " ++ show expr
+    Literal (I i)  -> return $ ConstantOperand $ Constant.Int 64 (fromIntegral i)
+    Var v          -> load =<< getVar v
+    BinOp o l r    -> generateOperator o l r
+    If p t e       -> generateIf p t e
+    Call name args -> generateCall name args
+    _              -> error $ "Not supported yet, doofus. Received: " ++ show expr
 
 lift2 :: Monad m => (a -> b -> m c) -> m a -> m b -> m c
 lift2 f mx my = do
   x <- mx
   y <- my
   f x y
+
+generateCall :: String -> [Expr] -> Gen Operand
+generateCall name args = do
+  values <- mapM generateSimpleOperand args
+  call (globalReference $ Name name) values
 
 generateIf :: Expr -> Expr -> Expr -> Gen Operand
 generateIf p t e = do

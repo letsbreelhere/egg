@@ -15,9 +15,21 @@ import qualified Supply
 import           Types.BlockState
 import           Types.Gen
 import           Types.GeneratorState
+import qualified LLVM.General.AST.CallingConvention as CC
+import qualified LLVM.General.AST.Attribute as A
+import qualified LLVM.General.AST.Constant as C
 
 localReference :: Name -> Operand
-localReference = LocalReference i64
+localReference = AST.LocalReference i64
+
+globalReference :: Name -> Operand
+globalReference = ConstantOperand . C.GlobalReference i64
+
+call :: Operand -> [Operand] -> Gen Operand
+call fn args = addInstruction $ AST.Call Nothing CC.C [] (Right fn) (toArgs args) [] []
+  where toArgs :: [Operand] -> [(Operand, [A.ParameterAttribute])]
+        toArgs = map (\x -> (x, []))
+
 
 -- aka `instr`
 addInstruction :: Instruction -> Gen Operand
