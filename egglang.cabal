@@ -15,10 +15,12 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:   Types
+  exposed-modules:   Control.Cofree
+                   , Types
                    , Types.BlockState
                    , Types.Constant
                    , Types.Expr
+                   , Types.EType
                    , Types.FunDef
                    , Types.Gen
                    , Types.GeneratorState
@@ -30,6 +32,8 @@ library
                    , LLVM
                    , Instructions
   build-depends:       base >= 4.7 && < 5
+                     , transformers
+                     , free
                      , megaparsec
                      , text
                      , llvm-general >= 3.5.0.0

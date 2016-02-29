@@ -7,4 +7,4 @@ data FunDef = FunDef
   , _args :: [String]
   , _body :: Expr
   }
-  deriving (Eq, Show)
+  deriving (Show)

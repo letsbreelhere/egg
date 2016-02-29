@@ -13,12 +13,13 @@ import qualified LLVM.General.AST.Constant as Constant
 import           LLVM.General.Context (withContext)
 import           LLVM.General.Module (withModuleFromAST, moduleLLVMAssembly)
 import           Types.Constant (Constant(..))
-import           Types.Expr (Expr(..))
+import           Types.Expr (Expr, BareExpr(..))
 import           Types.FunDef (FunDef(..))
 import           Types.Gen (Gen)
 import qualified Types.Gen as Gen
 import           Types.GeneratorState
 import           Types.BlockState (emptyBlock)
+import Control.Cofree
 
 toAssembly :: [FunDef] -> IO String
 toAssembly expr = withContext $ \context ->
@@ -55,18 +56,12 @@ mainBlocks expr = createBlocks . Gen.execCodegen $ ret =<< generateSimpleOperand
 generateSimpleOperand :: Expr -> Gen Operand
 generateSimpleOperand expr =
   case expr of
-    Literal (I i)  -> return $ ConstantOperand $ Constant.Int 64 (fromIntegral i)
-    Var v          -> load =<< getVar v
-    BinOp o l r    -> generateOperator o l r
-    If p t e       -> generateIf p t e
-    Call name args -> generateCall name args
-    _              -> error $ "Not supported yet, doofus. Received: " ++ show expr
-
-lift2 :: Monad m => (a -> b -> m c) -> m a -> m b -> m c
-lift2 f mx my = do
-  x <- mx
-  y <- my
-  f x y
+    Literal (I i)  :> () -> return $ ConstantOperand $ Constant.Int 64 (fromIntegral i)
+    Var v          :> () -> load =<< getVar v
+    BinOp o l r    :> () -> generateOperator o l r
+    If p t e       :> () -> generateIf p t e
+    Call name args :> () -> generateCall name args
+    _              -> error "Not supported yet, doofus. Received: " -- ++ show expr
 
 generateCall :: String -> [Expr] -> Gen Operand
 generateCall name args = do
@@ -95,6 +90,12 @@ generateIf p t e = do
 
   activeBlock .= ifExit
   phi i64 [(thenValue, ifThen), (elseValue, ifElse)]
+
+lift2 :: Monad m => (a -> b -> m c) -> m a -> m b -> m c
+lift2 f mx my = do
+  x <- mx
+  y <- my
+  f x y
 
 generateOperator :: String -> Expr -> Expr -> Gen Operand
 generateOperator o l r = case o of

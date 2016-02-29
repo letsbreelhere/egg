@@ -7,9 +7,9 @@ import           Text.Megaparsec.ShowToken (showToken)
 import           Text.Megaparsec.Expr
 import           Text.Megaparsec.Error (ParseError, Message(..))
 import           Text.Megaparsec.Pos (updatePosChar)
-import           Types.Token hiding (Literal)
+import           Types.Token
 import qualified Types.Token as Token
-import           Types.Expr hiding (Literal)
+import           Types.Expr
 import qualified Types.Expr as Expr
 import           Types.Constant
 import           Types.FunDef
@@ -37,25 +37,16 @@ expr = makeExprParser expr' table
 table :: [[Operator Parser Expr]]
 table = [[mkInfix "+"], [mkInfix ">"]]
   where
-    mkInfix name = InfixL (BinOp name <$ operator name)
+    mkInfix name = InfixL (binOp name <$ operator name)
 
 expr' :: Parser Expr
 expr' = choice
-          [ Expr.Literal <$> literal <?> "literal"
-          , assignment <?> "assignment"
+          [ Expr.literal <$> parseLiteral <?> "literal"
           , ifExpr <?> "if statement"
           , try fnCall <?> "function call"
-          , Var <$> anyIdentifier <?> "variable"
+          , var <$> anyIdentifier <?> "variable"
           , parens expr
           ]
-
-assignment :: Parser Expr
-assignment = do
-  keyword "let"
-  lhs <- anyIdentifier
-  operator "="
-  rhs <- expr
-  return (Assign lhs rhs)
 
 ifExpr :: Parser Expr
 ifExpr = do
@@ -64,10 +55,10 @@ ifExpr = do
   thenClause <- squareBraces expr
   keyword "else"
   elseClause <- squareBraces expr
-  pure $ If predicate thenClause elseClause
+  pure $ exprIf predicate thenClause elseClause
 
-literal :: Parser Constant
-literal = choice [I <$> anyInteger]
+parseLiteral :: Parser Constant
+parseLiteral = choice [I <$> anyInteger]
 
 parens = between (operator "(") (operator ")")
 
@@ -79,7 +70,7 @@ fnCall :: Parser Expr
 fnCall = do
   name <- anyIdentifier
   args <- parens (expr `sepBy` comma)
-  return (Call name args)
+  return (call name args)
 
 -- Primitives
 withTycon :: (a -> Token) -> a -> Parser a
