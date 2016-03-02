@@ -25,19 +25,22 @@ constantType c =
     B _  -> Ty "bool"
     Unit -> Ty "void"
 
-annotate :: FunDef -> Expr -> AnnExpr
+annotateDef :: FunDef () -> FunDef EType
+annotateDef fd = fd { _body = annotate fd (_body fd) }
+
+annotate :: FunDef () -> Expr -> AnnExpr
 annotate cxt e@(e' :> ()) =
   fmap (annotate cxt) e' :> resolveType cxt e
 
-resolveType :: FunDef -> Expr -> EType
+resolveType :: FunDef () -> Expr -> EType
 resolveType cxt (e :> ()) =
   case e of
     Literal c -> constantType c
-    Var v -> fromMaybe (error $ "Variable " ++ show v ++ " does not exist in this context")
+    Var v -> fromMaybe (error $ "annotate: Variable " ++ show v ++ " does not exist in this context")
                (lookup v (_args cxt))
     If _ thn els -> let tyThen = resolveType cxt thn
                         tyElse = resolveType cxt els
                     in if tyThen == tyElse
                          then tyThen
-                         else error "If/Else expressions don't match resolveTypepe"
+                         else error "annotate: If/Else expressions don't match type"
     _ -> error $ "annotate: unknown expression: " ++ show e

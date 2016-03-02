@@ -2,6 +2,7 @@
 
 module Types.Expr (
     BareExpr(..),
+    Expr',
     Expr,
     AnnExpr,
     literal,
@@ -34,9 +35,9 @@ instance Show1 BareExpr where
           BinOp s e e' -> show e ++ " " ++ s ++ " " ++ show e'
           If p t e     -> "if " ++ show p ++ " then " ++ show t ++ " else " ++ show e
 
-type Expr = Cofree BareExpr ()
-
-type AnnExpr = Cofree BareExpr EType
+type Expr' ann = Cofree BareExpr ann
+type AnnExpr = Expr' EType
+type Expr = Expr' ()
 
 literal :: Constant -> Expr
 literal c = Literal c :> ()

@@ -19,12 +19,12 @@ import           Control.Applicative (many, (<$))
 
 type Parser = Parsec [Token]
 
-parse :: String -> [Token] -> Either ParseError [FunDef]
+parse :: String -> [Token] -> Either ParseError [FunDef ()]
 parse = runParser program
 
 program = many function <* eof
 
-function :: Parser FunDef
+function :: Parser (FunDef ())
 function = do
   keyword "def"
   name <- anyIdentifier

@@ -31,7 +31,6 @@ call fn args = addInstruction $ AST.Call Nothing CC.C [] (Right fn) (toArgs args
         toArgs = map (\x -> (x, []))
 
 
--- aka `instr`
 addInstruction :: Instruction -> Gen Operand
 addInstruction instr = do
   (n, unnamedInstr') <- uses unnamedInstr Supply.fresh
@@ -67,7 +66,6 @@ alloca t = addInstruction $ AST.Alloca t Nothing 0 []
 load :: Operand -> Gen Operand
 load ptr = addInstruction $ AST.Load False ptr Nothing 0 []
 
--- aka `terminator`
 setTerminator :: Named Terminator -> Gen ()
 setTerminator term = currentBlockState . terminator .= Just term
 

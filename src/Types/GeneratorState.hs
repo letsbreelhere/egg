@@ -21,7 +21,6 @@ data GeneratorState =
          }
   deriving Show
 
--- aka getBlock
 activeBlock :: Lens' GeneratorState Name
 activeBlock = lens _activeBlock (\g s -> g { _activeBlock = s })
 
@@ -45,7 +44,6 @@ defaultGeneratorState = GeneratorState
   , _activeBlock = Name "NOBLOCK"
   }
 
--- aka setBlock
 currentBlockState :: (BlockState -> Identity BlockState) -> GeneratorState -> Identity GeneratorState
 currentBlockState = lens getCurrentBlockState setCurrentBlockState . _Just
   where
