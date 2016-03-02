@@ -10,7 +10,7 @@ import           Types.EType
 import           Instructions
 import           LLVM (generateModule, globalDefinition)
 import           LLVM.General.AST (Name(..), Definition, Operand(..), BasicBlock, Type)
-import           LLVM.General.AST.Type (i64, i1)
+import           LLVM.General.AST.Type (void, i64, i1)
 import qualified LLVM.General.AST.Constant as Constant
 import           LLVM.General.Context (withContext)
 import           LLVM.General.Module (withModuleFromAST, moduleLLVMAssembly)
@@ -36,7 +36,8 @@ functionToDefinition def =
   let name = _name def
       args = _args def
       body = _body def
-  in globalDefinition i64 name (map sigOf args) (bodyBlocks args body)
+      retTy  = _ret def
+  in globalDefinition (reifyAbstractType retTy) name (map sigOf args) (bodyBlocks args body)
 
 bodyBlocks :: [Signature] -> Expr -> [BasicBlock]
 bodyBlocks args body = createBlocks . Gen.execCodegen $ do
@@ -52,9 +53,11 @@ sigOf :: Signature -> (Type, Name)
 sigOf (v, ty) = (reifyAbstractType ty, Name v)
 
 reifyAbstractType :: EType -> Type
-reifyAbstractType ty = case ty of
-  Ty "bool" -> i1
-  Ty "int"  -> i64
+reifyAbstractType ty =
+  case ty of
+    Ty "bool" -> i1
+    Ty "int"  -> i64
+    Ty "void" -> void
 
 mainBlocks :: Expr -> [BasicBlock]
 mainBlocks expr = createBlocks . Gen.execCodegen $ ret =<< generateSimpleOperand expr

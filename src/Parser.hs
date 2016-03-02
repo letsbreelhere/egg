@@ -29,8 +29,9 @@ function = do
   keyword "def"
   name <- anyIdentifier
   args <- parens parseArgList
+  ret  <- Ty <$> anyIdentifier
   body <- squareBraces expr
-  return (FunDef name args body)
+  return (FunDef name args body ret)
 
 parseArgList :: Parser [Signature]
 parseArgList = flip sepBy comma $ do

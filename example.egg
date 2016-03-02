@@ -1,4 +1,4 @@
-def not(x bool) [
+def not(x bool) bool [
   if x [
     false
   ] else [
@@ -6,7 +6,7 @@ def not(x bool) [
   ]
 ]
 
-def main() [
+def main() int [
   if not(true) [
     123
   ] else [
