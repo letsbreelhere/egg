@@ -1,10 +1,9 @@
 module Types.FunDef where
 
-import Types.Expr (Expr)
+import           Types.Expr (Expr)
+import           Types.EType (EType)
 
-data FunDef = FunDef
-  { _name :: String
-  , _args :: [String]
-  , _body :: Expr
-  }
-  deriving (Show)
+type Signature = (String, EType)
+
+data FunDef = FunDef { _name :: String, _args :: [Signature], _body :: Expr }
+  deriving Show

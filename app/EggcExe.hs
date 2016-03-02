@@ -6,7 +6,9 @@ import qualified Codegen
 import           LLVM (generateModule)
 import           LLVM.General.Context (withContext)
 import           Types.Expr (Expr)
-import System.IO (hPrint, stderr)
+import           Types.FunDef
+import           System.IO (hPrint, stderr)
+import           Control.Cofree
 
 main :: IO ()
 main = do
@@ -15,5 +17,5 @@ main = do
   case parsed of
     Left err -> hPrint stderr err
     Right parsed' -> do
-      putStrLn $ "; Parsed from " ++ show parsed'
+      putStrLn $ "; Parsed from " ++ show (map (showLess . _body) parsed')
       putStrLn =<< Codegen.toAssembly parsed'

@@ -1,5 +1,6 @@
 module Types.EType where
 
 data EType = Ty String
-           | TVar Int
-  deriving (Eq)
+           | TyVar Int
+           | EType :-> EType
+  deriving (Eq, Show)

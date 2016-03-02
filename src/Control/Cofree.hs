@@ -11,3 +11,6 @@ instance Functor f => Functor (Cofree f) where
 
 instance (Show a, Show1 f) => Show (Cofree f a) where
   showsPrec n (x :> a) s = showsPrec1 n x "" ++ " :> " ++ showsPrec n a s
+
+showLess :: (Functor f, Show a, Show1 f) => Cofree f a -> String
+showLess (x :> _) = showsPrec1 1 (fmap showLess x) ""

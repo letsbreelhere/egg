@@ -6,7 +6,7 @@ import           Control.Monad (void)
 import           Text.Megaparsec
 import           Types.Constant
 import           Types.Token
-import Control.Applicative ((<$))
+import           Control.Applicative ((<$))
 
 type Lexer = Parsec String
 
@@ -39,7 +39,7 @@ lexKeyword = lexeme . choice . map keyword' $ reservedWords
     keyword' w = Keyword <$> lexeme (string w)
 
 reservedWords :: [String]
-reservedWords = ["def", "if", "else", "while", "let"]
+reservedWords = ["def", "if", "else", "while", "let", "true", "false"]
 
 integer :: Lexer Integer
 integer = lexeme L.integer <?> "integer"

@@ -9,6 +9,7 @@ import           Text.Megaparsec.Error (ParseError, Message(..))
 import           Text.Megaparsec.Pos (updatePosChar)
 import           Types.Token
 import qualified Types.Token as Token
+import           Types.EType
 import           Types.Expr
 import qualified Types.Expr as Expr
 import           Types.Constant
@@ -27,9 +28,15 @@ function :: Parser FunDef
 function = do
   keyword "def"
   name <- anyIdentifier
-  args <- parens (anyIdentifier `sepBy` comma)
+  args <- parens parseArgList
   body <- squareBraces expr
   return (FunDef name args body)
+
+parseArgList :: Parser [Signature]
+parseArgList = flip sepBy comma $ do
+  arg <- anyIdentifier
+  ty  <- anyIdentifier
+  pure (arg, Ty ty)
 
 expr :: Parser Expr
 expr = makeExprParser expr' table
@@ -58,7 +65,8 @@ ifExpr = do
   pure $ exprIf predicate thenClause elseClause
 
 parseLiteral :: Parser Constant
-parseLiteral = choice [I <$> anyInteger]
+parseLiteral = choice [I <$> anyInteger, bool]
+  where bool = B <$> choice [True <$ keyword "true", False <$ keyword "false"]
 
 parens = between (operator "(") (operator ")")
 

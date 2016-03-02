@@ -1,11 +1,15 @@
-def foo(x) [
+def not(x bool) [
   if x [
-    x + 10
+    false
   ] else [
-    foo(x+1) + 5
+    true
   ]
 ]
 
 def main() [
-  foo(0)
+  if not(true) [
+    123
+  ] else [
+    42
+  ]
 ]

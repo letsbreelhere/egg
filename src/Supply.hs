@@ -10,8 +10,8 @@ import           Control.Arrow ((&&&))
 newtype Supply a = Supply { unSupply :: ZipList a }
   deriving (Functor, Applicative)
 
-instance Show (Supply a) where
-  show _ = "<supply>"
+instance Show a => Show (Supply a) where
+  show s = "<supply: " ++ show (peek s) ++ ">"
 
 peek :: Supply a -> a
 peek = head . toList
@@ -27,3 +27,6 @@ toList = getZipList . unSupply
 
 variableNames :: Supply String
 variableNames = fromList $ sequence =<< [replicate i ['a' .. 'z'] | i <- [1 ..]]
+
+naturals :: Supply Int
+naturals = fromList [0 ..]
