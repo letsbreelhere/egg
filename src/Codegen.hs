@@ -71,7 +71,7 @@ generateSimpleOperand expr =
     Literal (B b) :> _  -> return $ ConstantOperand $ Constant.Int 1 (fromIntegral $ fromEnum b)
     Var v :> _          -> load =<< getVar v
     BinOp o l r :> _    -> generateOperator o l r
-    If p t e :> _       -> generateIf p t e
+    If p t e :> ty      -> generateIf ty p t e
     Call name args :> _ -> generateCall name args
     _                   -> error $ "Not supported yet, doofus. Received: " ++ showLess expr
 
@@ -80,8 +80,8 @@ generateCall name args = do
   values <- mapM generateSimpleOperand args
   call (globalReference $ Name name) values
 
-generateIf :: AnnExpr -> AnnExpr -> AnnExpr -> Gen Operand
-generateIf p t e = do
+generateIf :: EType -> AnnExpr -> AnnExpr -> AnnExpr -> Gen Operand
+generateIf ty p t e = do
   ifThen <- Gen.addBlock "if.then"
   ifElse <- Gen.addBlock "if.else"
   ifExit <- Gen.addBlock "if.exit"
@@ -99,7 +99,7 @@ generateIf p t e = do
   ifElse <- use activeBlock
 
   activeBlock .= ifExit
-  phi i64 [(thenValue, ifThen), (elseValue, ifElse)]
+  phi (reifyAbstractType ty) [(thenValue, ifThen), (elseValue, ifElse)]
 
 lift2 :: Monad m => (a -> b -> m c) -> m a -> m b -> m c
 lift2 f mx my = do
