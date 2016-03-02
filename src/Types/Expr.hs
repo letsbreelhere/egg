@@ -11,6 +11,7 @@ module Types.Expr (
     exprIf,
     ) where
 
+import           Types.EType
 import           Types.Constant
 import           Control.Cofree
 import           Data.Functor.Classes (Show1, showsPrec1)
@@ -27,15 +28,15 @@ instance Show1 BareExpr where
     where
       x =
         case e of
-          Literal c   -> show c
-          Var v       -> "%" ++ v
-          Call n [as] -> n ++ " " ++ show as
+          Literal c    -> show c
+          Var v        -> "%" ++ v
+          Call n [as]  -> n ++ " " ++ show as
           BinOp s e e' -> show e ++ " " ++ s ++ " " ++ show e'
-          If p t e -> "if " ++ show p ++ " then " ++ show t ++ " else " ++ show e
+          If p t e     -> "if " ++ show p ++ " then " ++ show t ++ " else " ++ show e
 
 type Expr = Cofree BareExpr ()
 
-type AnnExpr a = Cofree BareExpr a
+type AnnExpr = Cofree BareExpr EType
 
 literal :: Constant -> Expr
 literal c = Literal c :> ()

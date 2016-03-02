@@ -7,6 +7,7 @@ import           Control.Monad.State (execState)
 import qualified Data.Map as M
 import           Types.FunDef
 import           Types.EType
+import           TypeCheck
 import           Instructions
 import           LLVM (generateModule, globalDefinition)
 import           LLVM.General.AST (Name(..), Definition, Operand(..), BasicBlock, Type)
@@ -15,7 +16,7 @@ import qualified LLVM.General.AST.Constant as Constant
 import           LLVM.General.Context (withContext)
 import           LLVM.General.Module (withModuleFromAST, moduleLLVMAssembly)
 import           Types.Constant (Constant(..))
-import           Types.Expr (Expr, BareExpr(..))
+import           Types.Expr (AnnExpr, BareExpr(..))
 import           Types.Gen (Gen)
 import qualified Types.Gen as Gen
 import           Types.GeneratorState
@@ -33,13 +34,13 @@ toAssembly expr = withContext $ \context ->
 
 functionToDefinition :: FunDef -> Definition
 functionToDefinition def =
-  let name = _name def
-      args = _args def
-      body = _body def
-      retTy  = _ret def
+  let name  = _name def
+      args  = _args def
+      body  = annotate def (_body def)
+      retTy = _ret def
   in globalDefinition (reifyAbstractType retTy) name (map sigOf args) (bodyBlocks args body)
 
-bodyBlocks :: [Signature] -> Expr -> [BasicBlock]
+bodyBlocks :: [Signature] -> AnnExpr -> [BasicBlock]
 bodyBlocks args body = createBlocks . Gen.execCodegen $ do
   entryName <- Gen.addBlock "entry"
   activeBlock .= entryName
@@ -59,27 +60,27 @@ reifyAbstractType ty =
     Ty "int"  -> i64
     Ty "void" -> void
 
-mainBlocks :: Expr -> [BasicBlock]
+mainBlocks :: AnnExpr -> [BasicBlock]
 mainBlocks expr = createBlocks . Gen.execCodegen $ ret =<< generateSimpleOperand expr
 
 -- aka cgen
-generateSimpleOperand :: Expr -> Gen Operand
+generateSimpleOperand :: AnnExpr -> Gen Operand
 generateSimpleOperand expr =
   case expr of
-    Literal (I i) :> ()  -> return $ ConstantOperand $ Constant.Int 64 (fromIntegral i)
-    Literal (B b) :> ()  -> return $ ConstantOperand $ Constant.Int 1 (fromIntegral $ fromEnum b)
-    Var v :> ()          -> load =<< getVar v
-    BinOp o l r :> ()    -> generateOperator o l r
-    If p t e :> ()       -> generateIf p t e
-    Call name args :> () -> generateCall name args
-    _                    -> error $ "Not supported yet, doofus. Received: " ++ showLess expr
+    Literal (I i) :> _  -> return $ ConstantOperand $ Constant.Int 64 (fromIntegral i)
+    Literal (B b) :> _  -> return $ ConstantOperand $ Constant.Int 1 (fromIntegral $ fromEnum b)
+    Var v :> _          -> load =<< getVar v
+    BinOp o l r :> _    -> generateOperator o l r
+    If p t e :> _       -> generateIf p t e
+    Call name args :> _ -> generateCall name args
+    _                   -> error $ "Not supported yet, doofus. Received: " ++ showLess expr
 
-generateCall :: String -> [Expr] -> Gen Operand
+generateCall :: String -> [AnnExpr] -> Gen Operand
 generateCall name args = do
   values <- mapM generateSimpleOperand args
   call (globalReference $ Name name) values
 
-generateIf :: Expr -> Expr -> Expr -> Gen Operand
+generateIf :: AnnExpr -> AnnExpr -> AnnExpr -> Gen Operand
 generateIf p t e = do
   ifThen <- Gen.addBlock "if.then"
   ifElse <- Gen.addBlock "if.else"
@@ -106,13 +107,13 @@ lift2 f mx my = do
   y <- my
   f x y
 
-generateOperator :: String -> Expr -> Expr -> Gen Operand
+generateOperator :: String -> AnnExpr -> AnnExpr -> Gen Operand
 generateOperator o l r =
   case o of
     "+" -> lift2 add (generateSimpleOperand l) (generateSimpleOperand r)
     ">" -> lift2 gt (generateSimpleOperand l) (generateSimpleOperand r)
 
-assignmentBlocks :: String -> Expr -> [BasicBlock]
+assignmentBlocks :: String -> AnnExpr -> [BasicBlock]
 assignmentBlocks vname expr = createBlocks . Gen.execCodegen $ do
   var <- getVar vname
   value <- generateSimpleOperand expr
