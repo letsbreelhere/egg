@@ -81,7 +81,6 @@ fnCall = do
   args <- parens (expr `sepBy` comma)
   return (call name args)
 
--- Primitives
 withTycon :: (a -> Token) -> a -> Parser a
 withTycon con a = a <$ token (con a)
 
