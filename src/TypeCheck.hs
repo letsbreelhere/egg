@@ -8,7 +8,11 @@ import           Types.FunDef
 import           Types.Constant
 import           Supply
 import           Data.Map (Map)
+import qualified Data.Map as Map
 import           Unification
+import           Control.Monad.Trans.Except
+import           Control.Monad.State
+import           Control.Monad.Identity
 
 data AnnState =
        AnnState
@@ -16,6 +20,19 @@ data AnnState =
          , _equations :: [Equation EType]
          , _symtab :: Map String EType
          }
+
+defaultAnnState :: AnnState
+defaultAnnState = AnnState naturals [] Map.empty
+
+newtype TypeError = TypeError String
+
+newtype Ann a = Ann { unAnn :: ExceptT TypeError (StateT AnnState Identity) a }
+
+throwError :: String -> Ann a
+throwError = Ann . throwE . TypeError
+
+runAnn :: Ann a -> (Either TypeError a, AnnState)
+runAnn ann = runIdentity . flip runStateT defaultAnnState . runExceptT . unAnn $ ann
 
 constantType :: Constant -> EType
 constantType c =
@@ -25,22 +42,24 @@ constantType c =
     B _  -> Ty "bool"
     Unit -> Ty "void"
 
-annotateDef :: FunDef () -> FunDef EType
+annotateDef :: Show a => FunDef a -> FunDef EType
 annotateDef fd = fd { _body = annotate fd (_body fd) }
 
-annotate :: FunDef () -> Expr -> AnnExpr
-annotate cxt e@(e' :> ()) =
+annotate :: Show b => FunDef a -> Expr' b -> AnnExpr
+annotate cxt e@(e' :> _) =
   fmap (annotate cxt) e' :> resolveType cxt e
 
-resolveType :: FunDef () -> Expr -> EType
-resolveType cxt (e :> ()) =
+resolveType :: Show b => FunDef a -> Expr' b -> EType
+resolveType cxt (e :> _) =
   case e of
     Literal c -> constantType c
-    Var v -> fromMaybe (error $ "annotate: Variable " ++ show v ++ " does not exist in this context")
+    Var v -> fromMaybe
+               (error $ "annotate: Variable " ++ show v ++ " does not exist in this context")
                (lookup v (_args cxt))
-    If _ thn els -> let tyThen = resolveType cxt thn
-                        tyElse = resolveType cxt els
-                    in if tyThen == tyElse
-                         then tyThen
-                         else error "annotate: If/Else expressions don't match type"
+    If tyPred thn els ->
+      let tyThen = resolveType cxt thn
+          tyElse = resolveType cxt els
+      in if tyThen == tyElse
+           then tyThen
+           else error "annotate: If/Else expressions don't match type"
     _ -> error $ "annotate: unknown expression: " ++ show e

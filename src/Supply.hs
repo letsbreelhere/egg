@@ -1,7 +1,13 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module Supply (Supply, fresh, variableNames, fromList) where
+module Supply (
+    Supply,
+    fresh,
+    variableNames,
+    fromList,
+    naturals,
+    ) where
 
 import           Control.Monad.State
 import           Control.Applicative (ZipList(..))

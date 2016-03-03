@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFunctor, DeriveFoldable #-}
 
 module Types.Expr (
     BareExpr(..),
@@ -12,6 +12,7 @@ module Types.Expr (
     exprIf,
     ) where
 
+import           Data.Monoid
 import           Types.EType
 import           Types.Constant
 import           Control.Cofree
@@ -22,7 +23,7 @@ data BareExpr e = Literal Constant
                 | Call String [e]
                 | BinOp String e e
                 | If e e e
-  deriving (Eq, Show, Functor)
+  deriving (Eq, Show, Functor, Foldable)
 
 instance Show1 BareExpr where
   showsPrec1 n e s = x ++ s
@@ -34,6 +35,14 @@ instance Show1 BareExpr where
           Call n [as]  -> n ++ " " ++ show as
           BinOp s e e' -> show e ++ " " ++ s ++ " " ++ show e'
           If p t e     -> "if " ++ show p ++ " then " ++ show t ++ " else " ++ show e
+
+instance Traversable BareExpr where
+  sequenceA e = case e of
+    Literal c    -> pure $ Literal c
+    Var v        -> pure $ Var v
+    Call nm args -> Call nm <$> sequenceA args
+    BinOp o l r  -> BinOp o <$> l <*> r
+    If p t e     -> If <$> p <*> t <*> e
 
 type Expr' ann = Cofree BareExpr ann
 type AnnExpr = Expr' EType

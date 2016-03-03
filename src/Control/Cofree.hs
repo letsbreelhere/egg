@@ -1,6 +1,7 @@
 module Control.Cofree where
 
 import Data.Functor.Classes (Show1, showsPrec1)
+import Data.Monoid
 
 data Cofree f a = f (Cofree f a) :> a
 
