@@ -26,12 +26,12 @@ symbol :: String -> Lexer String
 symbol = L.symbol spaceConsumer
 
 lexOperator :: Lexer Token
-lexOperator = lexeme . choice . map operator' $ operators
+lexOperator = lexeme . choice . map (try . operator') $ operators
   where
     operator' :: String -> Lexer Token
     operator' s = Operator <$> symbol s
 
-operators = ["=", "+", "-", "(", "[", "{", "}", "]", ")", ",", ">", "<"]
+operators = ["^", "->", "=", "+", "-", "(", "[", "{", "}", "]", ")", ",", ">", "<"]
 
 lexKeyword = lexeme . choice . map keyword' $ reservedWords
   where

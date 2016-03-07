@@ -29,14 +29,14 @@ function = do
   keyword "def"
   name <- anyIdentifier
   args <- parens parseArgList
-  ret  <- Ty <$> anyIdentifier
+  ret <- Ty <$> anyIdentifier
   body <- squareBraces expr
   return (FunDef name args body ret)
 
 parseArgList :: Parser [Signature]
 parseArgList = flip sepBy comma $ do
   arg <- anyIdentifier
-  ty  <- anyIdentifier
+  ty <- anyIdentifier
   pure (arg, Ty ty)
 
 expr :: Parser Expr
@@ -54,6 +54,7 @@ expr' = choice
           , try fnCall <?> "function call"
           , var <$> anyIdentifier <?> "variable"
           , parens expr
+          , lambda
           ]
 
 ifExpr :: Parser Expr
@@ -67,19 +68,28 @@ ifExpr = do
 
 parseLiteral :: Parser Constant
 parseLiteral = choice [I <$> anyInteger, bool]
-  where bool = B <$> choice [True <$ keyword "true", False <$ keyword "false"]
-
-parens = between (operator "(") (operator ")")
-
-squareBraces = between (operator "[") (operator "]")
-
-comma = operator ","
+  where
+    bool = B <$> choice [True <$ keyword "true", False <$ keyword "false"]
 
 fnCall :: Parser Expr
 fnCall = do
   name <- anyIdentifier
   args <- parens (expr `sepBy` comma)
   return (call name args)
+
+lambda :: Parser Expr
+lambda = do
+  operator "^"
+  v <- anyIdentifier
+  operator "->"
+  body <- expr
+  pure (lam v body)
+
+comma = operator ","
+
+parens = between (operator "(") (operator ")")
+
+squareBraces = between (operator "[") (operator "]")
 
 withTycon :: (a -> Token) -> a -> Parser a
 withTycon con a = a <$ token (con a)
