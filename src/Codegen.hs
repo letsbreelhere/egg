@@ -67,11 +67,11 @@ mainBlocks expr = createBlocks . Gen.execCodegen $ ret =<< genOperand expr
 genOperand :: AnnExpr -> Gen Operand
 genOperand expr =
   case expr of
-    Literal c      :> _  -> return . ConstantOperand . generateConstantOperand $ c
-    Var v          :> _  -> load =<< getVar v
-    Call name args :> _  -> generateCall name args
-    BinOp o l r    :> _  -> generateOperator o l r
-    If p t e       :> ty -> generateIf ty p t e
+    Literal c   :> _  -> return . ConstantOperand . generateConstantOperand $ c
+    Var v       :> _  -> load =<< getVar v
+    l :@: r     :> _  -> generateApplication l r
+    BinOp o l r :> _  -> generateOperator o l r
+    If p t e    :> ty -> generateIf ty p t e
 
 generateConstantOperand :: Constant -> LLVM.Constant
 generateConstantOperand c =
@@ -79,10 +79,8 @@ generateConstantOperand c =
     I i -> LLVM.Int 64 $ fromIntegral i
     B b -> LLVM.Int 1 $ fromIntegral $ fromEnum b
 
-generateCall :: String -> [AnnExpr] -> Gen Operand
-generateCall name args = do
-  values <- mapM genOperand args
-  call (globalReference $ Name name) values
+generateApplication :: AnnExpr -> AnnExpr -> Gen Operand
+generateApplication l r = error "Function application is borked, yo"
 
 generateIf :: EType -> AnnExpr -> AnnExpr -> AnnExpr -> Gen Operand
 generateIf ty p t e = do

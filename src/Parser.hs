@@ -72,10 +72,7 @@ parseLiteral = choice [I <$> anyInteger, bool]
     bool = B <$> choice [True <$ keyword "true", False <$ keyword "false"]
 
 fnCall :: Parser Expr
-fnCall = do
-  name <- anyIdentifier
-  args <- parens (expr `sepBy` comma)
-  return (call name args)
+fnCall = call <$> expr <*> parens expr
 
 lambda :: Parser Expr
 lambda = do
