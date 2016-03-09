@@ -88,7 +88,7 @@ parens = between (operator "(") (operator ")")
 
 squareBraces = between (operator "[") (operator "]")
 
-withTycon :: (a -> Token) -> a -> Parser a
+withTycon :: (a -> Lexeme) -> a -> Parser a
 withTycon con a = a <$ token (con a)
 
 keyword :: String -> Parser String
@@ -112,13 +112,16 @@ anyInteger = do
     I i -> pure i
     _   -> failure [Unexpected (showToken l), Expected "integer"]
 
-token :: Token -> Parser Token
+token :: Lexeme -> Parser Lexeme
 token t = satisfy (== t) <?> showToken t
 
-satisfy :: (Token -> Bool) -> Parser Token
-satisfy p = Prim.token updatePosToken testToken
+satisfy :: (Lexeme -> Bool) -> Parser Lexeme
+satisfy p = do
+  t <- Prim.token updatePosToken testToken
+  setPosition $ _pos t
+  pure $ _lexeme t
   where
-    testToken t = if p t
+    testToken t = if p (_lexeme t)
                     then Right t
                     else Left . pure . Unexpected . showToken $ t
-    updatePosToken _ pos _ = updatePosChar 0 pos ' '
+    updatePosToken _ pos t = updatePosChar 0 pos ' '

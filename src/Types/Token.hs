@@ -3,17 +3,24 @@
 module Types.Token where
 
 import           Text.Megaparsec.ShowToken
+import           Text.Megaparsec (SourcePos)
 import           Types.Constant
 
-data Token = Literal Constant
-           | Identifier String
-           | Keyword String
-           | Operator String
+data Lexeme = Literal Constant
+            | Identifier String
+            | Keyword String
+            | Operator String
   deriving (Show, Eq)
 
+data Token = Token { _lexeme :: Lexeme, _pos :: SourcePos }
+  deriving (Show)
+
 instance ShowToken Token where
-  showToken t =
-    case t of
+  showToken t = showToken (_lexeme t)
+
+instance ShowToken Lexeme where
+  showToken l =
+    case l of
       Literal c    -> showToken c
       Identifier s -> s
       Keyword s    -> s
