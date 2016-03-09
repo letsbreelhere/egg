@@ -124,4 +124,4 @@ satisfy p = do
     testToken t = if p (_lexeme t)
                     then Right t
                     else Left . pure . Unexpected . showToken $ t
-    updatePosToken _ pos t = updatePosChar 0 pos ' '
+    updatePosToken _ pos _ = pos

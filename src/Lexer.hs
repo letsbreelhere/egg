@@ -14,7 +14,7 @@ lex :: String -> String -> Either ParseError [Token]
 lex = runParser (lexGrammar <* eof)
 
 lexGrammar :: Lexer [Token]
-lexGrammar = many . choice . map withPos $ [lexOperator, lexLiteral, try lexKeyword, lexIdentifier]
+lexGrammar = many . choice . map withPos $ [lexOperator <?> "operator", lexLiteral, try lexKeyword , lexIdentifier <?> "identifier"]
 
 withPos :: Lexer Lexeme -> Lexer Token
 withPos l = do
