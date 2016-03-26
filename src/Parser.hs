@@ -45,7 +45,7 @@ expr = makeExprParser expr' table
 table :: [[Operator Parser Expr]]
 table = [[mkInfix "+"], [mkInfix ">"]]
   where
-    mkInfix name = InfixL (binOp name <$ operator name)
+    mkInfix name = InfixL (binOp <$> operator name)
 
 expr' :: Parser Expr
 expr' = choice
@@ -55,7 +55,7 @@ expr' = choice
           , var <$> anyIdentifier <?> "variable"
           , parens expr
           , lambda
-          ]
+          ] <?> "expression"
 
 ifExpr :: Parser Expr
 ifExpr = do
