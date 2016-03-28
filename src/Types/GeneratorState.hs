@@ -1,6 +1,6 @@
 module Types.GeneratorState where
 
-import           LLVM.General.AST (Instruction, Name(..), Named(..), Operand(..), Terminator)
+import           LLVM.General.AST (Definition, Instruction, Name(..), Named(..), Operand(..), Terminator)
 import           Data.Map (Map)
 import           Types.BlockState
 import           Supply (Supply)
@@ -18,6 +18,7 @@ data GeneratorState =
          , _symtab :: SymbolTable
          , _unnamedInstr :: Supply Word
          , _namedInstr :: Supply String
+         , _closures :: [Definition]
          }
   deriving Show
 
@@ -26,6 +27,9 @@ activeBlock = lens _activeBlock (\g s -> g { _activeBlock = s })
 
 symtab :: Lens' GeneratorState SymbolTable
 symtab = lens _symtab (\g s -> g { _symtab = s })
+
+closures :: Lens' GeneratorState [Definition]
+closures = lens _closures (\g s -> g { _closures = s })
 
 unnamedInstr :: Lens' GeneratorState (Supply Word)
 unnamedInstr = lens _unnamedInstr (\g s -> g { _unnamedInstr = s })
@@ -42,6 +46,7 @@ defaultGeneratorState = GeneratorState
   , _symtab = M.empty
   , _blocks = M.empty
   , _activeBlock = Name "NOBLOCK"
+  , _closures = []
   }
 
 currentBlockState :: (BlockState -> Identity BlockState) -> GeneratorState -> Identity GeneratorState

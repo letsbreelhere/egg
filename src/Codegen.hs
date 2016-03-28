@@ -11,7 +11,8 @@ import           TypeCheck
 import           Instructions
 import           LLVM (generateModule, globalDefinition)
 import           LLVM.General.AST (Name(..), Definition, Operand(..), BasicBlock, Type)
-import           LLVM.General.AST.Type (void, i64, i1)
+import           LLVM.General.AST.AddrSpace (AddrSpace(..))
+import           LLVM.General.AST.Type (void, i64, i1, Type(..))
 import qualified LLVM.General.AST.Constant as LLVM
 import           LLVM.General.Context (withContext)
 import           LLVM.General.Module (withModuleFromAST, moduleLLVMAssembly)
@@ -32,7 +33,7 @@ toAssembly expr = withContext $ \context ->
     runOrBarf :: ExceptT String IO a -> IO a
     runOrBarf = runExceptT >=> either fail return
 
-functionToDefinition :: FunDef () -> Definition
+functionToDefinition :: Show a => FunDef a -> Definition
 functionToDefinition def =
   let def'  = annotateDef def
       args  = _args def'
@@ -72,6 +73,23 @@ genOperand expr =
     l :@: r     :> _  -> generateApplication l r
     BinOp o l r :> _  -> generateOperator o l r
     If p t e    :> ty -> generateIf ty p t e
+    Lam v e     :> _  -> generateLambda v e
+
+{- So here's the deal with this mess:
+ - Currently, we require FunDefs to generate Definitions, which requires a
+ - signature. Since I don't feel like extending the type system until I know
+ - what closures even look like internally, I'm assuming they always take an
+ - `int` and return an `int` for now.
+ -}
+generateLambda :: String -> AnnExpr -> Gen Operand
+generateLambda v e = do
+  closureName <- ("lam_" ++) <$> Gen.freshNamed
+  let closureArgs = [(v, Ty "int")]
+      retTy = Ty "int"
+      tmpDef = FunDef closureName closureArgs e retTy
+      llvmTy = PointerType (FunctionType i64 [i64] False) (AddrSpace 0)
+  closures %= (functionToDefinition tmpDef :)
+  return . ConstantOperand $ LLVM.GlobalReference llvmTy (Name closureName)
 
 generateConstantOperand :: Constant -> LLVM.Constant
 generateConstantOperand c =
