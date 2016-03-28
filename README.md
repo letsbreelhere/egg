@@ -52,7 +52,9 @@ if-else expressions, and function definitions (including recursive ones, thanks
   current annotation step growing more or less organically out of the current
   machinery; for the foreseeable future, hard `error`s seem fine if I'm
   convinced enough that a real typechecker must logically make them impossible
-  in the course of compilation.
+  in the course of compilation. This is probably a good place to try and
+  structure the whole compilation process more like a pipeline: lex, parse,
+  typecheck, codegen, output IR.
 
 - [ ] Finally, a directory of real examples, with expected output/return values,
   would be valuable once syntax becomes more stable. Currently I just use
