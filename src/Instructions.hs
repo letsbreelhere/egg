@@ -25,6 +25,9 @@ localReference = AST.LocalReference i64
 globalReference :: Name -> Operand
 globalReference = ConstantOperand . C.GlobalReference i64
 
+callLambda :: Operand -> Operand -> Gen Operand
+callLambda fn arg = addInstruction $ AST.Call Nothing CC.C [] (Right fn) [(arg, [])] [] []
+
 call :: Operand -> [Operand] -> Gen Operand
 call fn args = addInstruction $ AST.Call Nothing CC.C [] (Right fn) (toArgs args) [] []
   where toArgs :: [Operand] -> [(Operand, [A.ParameterAttribute])]

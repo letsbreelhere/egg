@@ -12,7 +12,7 @@ import           Instructions
 import           LLVM (generateModule, globalDefinition)
 import           LLVM.General.AST (Name(..), Definition, Operand(..), BasicBlock, Type)
 import           LLVM.General.AST.AddrSpace (AddrSpace(..))
-import           LLVM.General.AST.Type (void, i64, i1, Type(..))
+import           LLVM.General.AST.Type (ptr, void, i64, i1, Type(..))
 import qualified LLVM.General.AST.Constant as LLVM
 import           LLVM.General.Context (withContext)
 import           LLVM.General.Module (withModuleFromAST, moduleLLVMAssembly)
@@ -58,6 +58,7 @@ sigOf (v, ty) = (reifyAbstractType ty, Name v)
 reifyAbstractType :: EType -> Type
 reifyAbstractType ty =
   case ty of
+    t :-> u   -> ptr $ FunctionType (reifyAbstractType u) [reifyAbstractType t] False
     Ty "bool" -> i1
     Ty "int"  -> i64
     Ty "void" -> void
@@ -98,7 +99,7 @@ generateConstantOperand c =
     B b -> LLVM.Int 1 $ fromIntegral $ fromEnum b
 
 generateApplication :: AnnExpr -> AnnExpr -> Gen Operand
-generateApplication l r = error "Function application is borked, yo"
+generateApplication l r = lift2 callLambda (genOperand l) (genOperand r)
 
 generateIf :: EType -> AnnExpr -> AnnExpr -> AnnExpr -> Gen Operand
 generateIf ty p t e = do
