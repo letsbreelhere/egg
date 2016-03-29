@@ -25,24 +25,26 @@ import           Types.BlockState (emptyBlock)
 import           Control.Cofree
 
 toAssembly :: [FunDef ()] -> IO String
-toAssembly expr = withContext $ \context ->
+toAssembly defs = withContext $ \context ->
   runOrBarf $ withModuleFromAST context generatedModule moduleLLVMAssembly
   where
-    definitions = map functionToDefinition expr
+    definitions = concatMap functionToDefinitions defs
     generatedModule = generateModule definitions "Egg!"
     runOrBarf :: ExceptT String IO a -> IO a
     runOrBarf = runExceptT >=> either fail return
 
-functionToDefinition :: Show a => FunDef a -> Definition
-functionToDefinition def =
+functionToDefinitions :: Show a => FunDef a -> [Definition]
+functionToDefinitions def =
   let def'  = annotateDef def
       args  = _args def'
       body  = _body def'
       retTy = _ret def'
       name  = _name def'
-  in globalDefinition (reifyAbstractType retTy) name (map sigOf args) (bodyBlocks args body)
+      (generatedBodyBlocks, cls) = bodyBlocks args body
+      mainFunctionDefn = globalDefinition (reifyAbstractType retTy) name (map sigOf args) generatedBodyBlocks
+  in mainFunctionDefn : cls
 
-bodyBlocks :: [Signature] -> AnnExpr -> [BasicBlock]
+bodyBlocks :: [Signature] -> AnnExpr -> ([BasicBlock], [Definition])
 bodyBlocks args body = createBlocks . Gen.execCodegen $ do
   entryName <- Gen.addBlock "entry"
   activeBlock .= entryName
@@ -62,9 +64,6 @@ reifyAbstractType ty =
     Ty "bool" -> i1
     Ty "int"  -> i64
     Ty "void" -> void
-
-mainBlocks :: AnnExpr -> [BasicBlock]
-mainBlocks expr = createBlocks . Gen.execCodegen $ ret =<< genOperand expr
 
 genOperand :: AnnExpr -> Gen Operand
 genOperand expr =
@@ -88,8 +87,8 @@ generateLambda v e = do
   let closureArgs = [(v, Ty "int")]
       retTy = Ty "int"
       tmpDef = FunDef closureName closureArgs e retTy
-      llvmTy = PointerType (FunctionType i64 [i64] False) (AddrSpace 0)
-  closures %= (functionToDefinition tmpDef :)
+      llvmTy = ptr $ FunctionType i64 [i64] False
+  closures %= (++ functionToDefinitions tmpDef)
   return . ConstantOperand $ LLVM.GlobalReference llvmTy (Name closureName)
 
 generateConstantOperand :: Constant -> LLVM.Constant
@@ -133,9 +132,3 @@ generateOperator o l r =
   case o of
     "+" -> lift2 add (genOperand l) (genOperand r)
     ">" -> lift2 gt (genOperand l) (genOperand r)
-
-assignmentBlocks :: String -> AnnExpr -> [BasicBlock]
-assignmentBlocks vname expr = createBlocks . Gen.execCodegen $ do
-  var <- getVar vname
-  value <- genOperand expr
-  store var value

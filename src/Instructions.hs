@@ -86,8 +86,8 @@ getVar vname = do
   value <- M.lookup vname <$> use symtab
   maybe (error $ "Couldn't find variable with name " ++ show vname) return value
 
-createBlocks :: GeneratorState -> [AST.BasicBlock]
-createBlocks gs = toList $ M.mapWithKey makeBlock (view blocks gs)
+createBlocks :: GeneratorState -> ([AST.BasicBlock], [AST.Definition])
+createBlocks gs = (toList $ M.mapWithKey makeBlock (view blocks gs), view closures gs)
 
 makeBlock :: Name -> BlockState -> AST.BasicBlock
 makeBlock l bs = AST.BasicBlock l (toList $ view stack bs) (castTerminator $ view terminator bs)
