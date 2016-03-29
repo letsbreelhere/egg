@@ -38,6 +38,7 @@ instance Show1 BareExpr where
           l :@: r      -> show l ++ "@" ++ show r
           BinOp s e e' -> show e ++ " " ++ s ++ " " ++ show e'
           If p t e     -> "if " ++ show p ++ " then " ++ show t ++ " else " ++ show e
+          Lam v e      -> "^ " ++ v ++ " -> " ++ show e
 
 instance Traversable BareExpr where
   sequenceA e =

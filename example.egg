@@ -1,15 +1,7 @@
-def not(x bool) bool [
-  if x [
-    false
-  ] else [
-    true
-  ]
+def const(i int) func (int) (int) [
+  ^ x -> 42
 ]
 
 def main() int [
-  if not(true) [
-    123
-  ] else [
-    42
-  ]
+  ``const 123 456
 ]

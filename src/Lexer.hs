@@ -37,7 +37,7 @@ lexOperator = lexeme . choice . map (try . operator') $ operators
     operator' :: String -> Lexer Lexeme
     operator' s = Operator <$> symbol s
 
-operators = ["^", "->", "=", "+", "-", "(", "[", "{", "}", "]", ")", ",", ">", "<"]
+operators = ["^", "->", "=", "+", "-", "(", "[", "{", "}", "]", ")", ",", ">", "<", "`"]
 
 lexKeyword = lexeme . choice . map keyword' $ reservedWords
   where
@@ -45,7 +45,7 @@ lexKeyword = lexeme . choice . map keyword' $ reservedWords
     keyword' w = Keyword <$> lexeme (string w)
 
 reservedWords :: [String]
-reservedWords = ["def", "if", "else", "while", "let", "true", "false"]
+reservedWords = ["func", "def", "if", "else", "while", "let", "true", "false"]
 
 integer :: Lexer Integer
 integer = lexeme L.integer <?> "integer"

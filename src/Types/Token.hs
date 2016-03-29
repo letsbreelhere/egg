@@ -21,10 +21,10 @@ instance ShowToken Token where
 instance ShowToken Lexeme where
   showToken l =
     case l of
-      Literal c    -> showToken c
-      Identifier s -> s
-      Keyword s    -> s
-      Operator s   -> s
+      Literal c    -> "LT:" ++ showToken c
+      Identifier s -> "ID:" ++ s
+      Keyword s    -> "KW:" ++ s
+      Operator s   -> "OP:" ++ s
 
 instance ShowToken [Token] where
   showToken = unwords . map showToken

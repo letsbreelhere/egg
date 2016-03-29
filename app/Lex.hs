@@ -10,4 +10,4 @@ main = do
   parsed <- Lexer.lex "" <$> getContents
   case parsed of
     Left err -> hPrint stderr err
-    Right parsed' -> putStrLn . intercalate ", " . map (show . showToken) $ parsed'
+    Right parsed' -> putStrLn . unwords . map showToken $ parsed'

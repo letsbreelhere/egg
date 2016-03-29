@@ -29,15 +29,23 @@ function = do
   keyword "def"
   name <- anyIdentifier
   args <- parens parseArgList
-  ret <- Ty <$> anyIdentifier
+  ret <- typeSignature
   body <- squareBraces expr
   return (FunDef name args body ret)
+
+typeSignature :: Parser EType
+typeSignature = choice [funTy, Ty <$> anyIdentifier]
+  where funTy = do
+          keyword "func"
+          l <- parens typeSignature
+          r <- parens typeSignature
+          pure (l :-> r)
 
 parseArgList :: Parser [Signature]
 parseArgList = flip sepBy comma $ do
   arg <- anyIdentifier
-  ty <- anyIdentifier
-  pure (arg, Ty ty)
+  ty <- typeSignature
+  pure (arg, ty)
 
 expr :: Parser Expr
 expr = makeExprParser expr' table
@@ -51,7 +59,7 @@ expr' :: Parser Expr
 expr' = choice
           [ Expr.literal <$> parseLiteral <?> "literal"
           , ifExpr <?> "if statement"
-          , try fnCall <?> "function call"
+          , fnCall <?> "function call"
           , var <$> anyIdentifier <?> "variable"
           , parens expr
           , lambda
@@ -72,7 +80,9 @@ parseLiteral = choice [I <$> anyInteger, bool]
     bool = B <$> choice [True <$ keyword "true", False <$ keyword "false"]
 
 fnCall :: Parser Expr
-fnCall = call <$> expr <*> parens expr
+fnCall = do
+  operator "`"
+  call <$> expr <*> expr
 
 lambda :: Parser Expr
 lambda = do
