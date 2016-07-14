@@ -5,7 +5,7 @@ import           Data.Map (Map)
 import           Types.BlockState
 import           Supply (Supply)
 import qualified Supply
-import           Control.Lens (Lens', lens, view, Identity, (&), (%~), _Just)
+import           Control.Lens (Traversal', Lens', lens, view, Identity, (&), (%~), _Just)
 import qualified Data.Map as M
 import qualified Data.Sequence as Seq
 
@@ -49,7 +49,7 @@ defaultGeneratorState = GeneratorState
   , _closures = []
   }
 
-currentBlockState :: (BlockState -> Identity BlockState) -> GeneratorState -> Identity GeneratorState
+currentBlockState :: Traversal' GeneratorState BlockState
 currentBlockState = lens getCurrentBlockState setCurrentBlockState . _Just
   where
     activeName = view activeBlock
