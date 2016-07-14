@@ -1,38 +1,38 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveFunctor #-}
 
-module Supply (
-    Supply,
-    fresh,
-    variableNames,
-    fromList,
-    naturals,
-    ) where
+module Supply (Supply, fresh, variableNames, iterate, naturals) where
 
+import           Prelude hiding (iterate)
 import           Control.Monad.State
 import           Control.Applicative (ZipList(..))
 import           Control.Arrow ((&&&))
+import           Data.Bifunctor (second)
 
-newtype Supply a = Supply { unSupply :: ZipList a }
-  deriving (Functor, Applicative)
+data Supply a = a :& Supply a
+  deriving (Functor)
+
+instance Applicative Supply where
+  pure a = a :& pure a
+  (f :& fs) <*> (a :& as) = f a :& (fs <*> as)
+
+peek :: Supply a -> a
+peek (a :& _) = a
 
 instance Show a => Show (Supply a) where
   show s = "<supply: " ++ show (peek s) ++ ">"
 
-peek :: Supply a -> a
-peek = head . toList
-
 fresh :: Supply a -> (a, Supply a)
-fresh = peek &&& (fromList . tail . toList)
-
-fromList :: [a] -> Supply a
-fromList = Supply . ZipList
-
-toList :: Supply a -> [a]
-toList = getZipList . unSupply
+fresh (a :& as) = (a, as)
 
 variableNames :: Supply String
-variableNames = fromList $ sequence =<< [replicate i ['a' .. 'z'] | i <- [1 ..]]
+variableNames = concatListSupply $ fmap (\n -> replicate (succ n) ['a' .. 'z']) naturals
+  where
+    concatListSupply :: Supply [a] -> Supply a
+    concatListSupply ([] :& rest) = concatListSupply rest
+    concatListSupply ((x:xs) :& rest) = x :& concatListSupply (xs :& rest)
+
+iterate :: (a -> a) -> a -> Supply a
+iterate f x = x :& iterate f (f x)
 
 naturals :: Supply Int
-naturals = fromList [0 ..]
+naturals = iterate succ 0

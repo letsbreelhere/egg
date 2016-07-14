@@ -41,7 +41,7 @@ blocks :: Lens' GeneratorState (Map Name BlockState)
 blocks = lens _blocks (\g s -> g { _blocks = s })
 
 defaultGeneratorState = GeneratorState
-  { _unnamedInstr = Supply.fromList [1 ..]
+  { _unnamedInstr = fmap fromIntegral Supply.naturals
   , _namedInstr = Supply.variableNames
   , _symtab = M.empty
   , _blocks = M.empty
