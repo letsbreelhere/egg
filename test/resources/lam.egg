@@ -1,0 +1,7 @@
+def lam(i int) func (int) (int) [
+  ^ x -> 42
+]
+
+def main() int [
+  ``lam 23 6
+]
