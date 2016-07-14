@@ -1,4 +1,4 @@
-module Codegen (toAssembly) where
+module Codegen (LlvmError, toAssembly) where
 
 import           Control.Lens
 import           Control.Monad (forM_, (>=>))
@@ -23,15 +23,17 @@ import qualified Types.Gen as Gen
 import           Types.GeneratorState
 import           Types.BlockState (emptyBlock)
 import           Control.Cofree
+import           Data.Bifunctor (first)
 
-toAssembly :: [FunDef ()] -> IO String
+newtype LlvmError = LlvmError String
+  deriving (Show)
+
+toAssembly :: [FunDef ()] -> IO (Either LlvmError String)
 toAssembly defs = withContext $ \context ->
-  runOrBarf $ withModuleFromAST context generatedModule moduleLLVMAssembly
+   fmap (first LlvmError) . runExceptT $ withModuleFromAST context generatedModule moduleLLVMAssembly
   where
     definitions = concatMap functionToDefinitions defs
     generatedModule = generateModule definitions "Egg!"
-    runOrBarf :: ExceptT String IO a -> IO a
-    runOrBarf = runExceptT >=> either fail return
 
 functionToDefinitions :: Show a => FunDef a -> [Definition]
 functionToDefinitions def =

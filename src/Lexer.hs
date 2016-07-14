@@ -17,10 +17,7 @@ lexGrammar :: Lexer [Token]
 lexGrammar = many . choice . map withPos $ [lexOperator <?> "operator", lexLiteral, try lexKeyword , lexIdentifier <?> "identifier"]
 
 withPos :: Lexer Lexeme -> Lexer Token
-withPos l = do
-  lexeme <- l
-  src <- getPosition
-  pure $ Token lexeme src
+withPos lex = Token <$> lex <*> getPosition
 
 spaceConsumer :: Lexer ()
 spaceConsumer = L.space (void spaceChar) (L.skipLineComment "--") (L.skipBlockComment "{-" "-}")

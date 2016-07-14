@@ -1,0 +1,2 @@
+def foo(i int) int [ 42 ]
+def main() int [ `foo 23 ]

@@ -16,5 +16,5 @@ instance (Show a, Show1 f) => Show (Cofree f a) where
 instance (Eq1 f, Eq a) => Eq (Cofree f a) where
   (l :> r) == (l' :> r') = l `eq1` l' && r == r'
 
-showLess :: (Functor f, Show a, Show1 f) => Cofree f a -> String
+showLess :: (Functor f, Show1 f) => Cofree f a -> String
 showLess (x :> _) = showsPrec1 1 (fmap showLess x) ""

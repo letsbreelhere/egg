@@ -33,7 +33,6 @@ call fn args = addInstruction $ AST.Call Nothing CC.C [] (Right fn) (toArgs args
   where toArgs :: [Operand] -> [(Operand, [A.ParameterAttribute])]
         toArgs = map (\x -> (x, []))
 
-
 addInstruction :: Instruction -> Gen Operand
 addInstruction instr = do
   (n, unnamedInstr') <- uses unnamedInstr Supply.fresh

@@ -13,7 +13,20 @@ compilerSpec :: TestTree
 compilerSpec = testGroup "Code generation and compiler"
   [ testCase "simple return values" $
       testInterpreterFile "return42.egg" (ExitFailure 42)
+  , testCase "arithmetic" $
+      testInterpreterFile "addition.egg" (ExitFailure 14)
+  , testCase "argument-less function calls" $
+      testInterpreterFile "function_calls.egg" (ExitFailure 42)
   ]
+
+compile :: String -> IO String
+compile input = do
+  c <- Compiler.compile input
+  case c of
+    Left err -> do
+      assertFailure (show err)
+      undefined -- Gotta make the compiler happy, but this is unreachable
+    Right asm -> pure asm
 
 testInterpreterFile :: FilePath -> ExitCode -> Assertion
 testInterpreterFile path code = do
@@ -22,7 +35,7 @@ testInterpreterFile path code = do
 
 testInterpreter :: String -> ExitCode -> Assertion
 testInterpreter input expectedCode = do
-  Right assembly <- Compiler.compile input
+  assembly <- compile input
   (Just ihdl, _, _, ph) <- Proc.createProcess (Proc.proc "lli-3.5" []){Proc.std_in = Proc.CreatePipe}
   hPutStr ihdl assembly >> hClose ihdl
   exitCode <- Proc.waitForProcess ph
