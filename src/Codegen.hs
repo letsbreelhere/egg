@@ -24,16 +24,17 @@ import           Types.GeneratorState
 import           Types.BlockState (emptyBlock)
 import           Control.Cofree
 import           Data.Bifunctor (first)
+import           Debug.Trace (trace, traceShow)
 
 newtype LlvmError = LlvmError String
   deriving (Show)
 
 toAssembly :: [FunDef ()] -> IO (Either LlvmError String)
-toAssembly defs = withContext $ \context ->
-   fmap (first LlvmError) . runExceptT $ withModuleFromAST context generatedModule moduleLLVMAssembly
-  where
-    definitions = concatMap functionToDefinitions defs
-    generatedModule = generateModule definitions "Egg!"
+toAssembly defs =
+  let definitions = concatMap functionToDefinitions defs
+      generatedModule = generateModule definitions "Egg!"
+  in withContext $ \context ->
+       fmap (first LlvmError) . runExceptT $ withModuleFromAST context generatedModule moduleLLVMAssembly
 
 functionToDefinitions :: Show a => FunDef a -> [Definition]
 functionToDefinitions def =
@@ -71,7 +72,7 @@ genOperand :: AnnExpr -> Gen Operand
 genOperand expr =
   case expr of
     Literal c   :> _  -> return . ConstantOperand . generateConstantOperand $ c
-    Var v       :> _  -> load =<< getVar v
+    Var v       :> _  -> getVar v
     l :@: r     :> _  -> generateApplication l r
     BinOp o l r :> _  -> generateOperator o l r
     If p t e    :> ty -> generateIf ty p t e

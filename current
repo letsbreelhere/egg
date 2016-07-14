@@ -1,0 +1,8 @@
+The current state of things is this:
+
+Non-main global function calls fails because of the symbol lookup function. More
+precisely, only local variables are added to the `symtab`, so local calls don't
+recognize a function's symbol. This means the `Gen` monad needs a new feature -
+it must also provide all new globally-defined symbols (presumably just one per
+function definition), and `functionToDefinitions` must thread those values
+through to the next `Gen`'s symbol table.

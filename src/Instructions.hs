@@ -9,7 +9,7 @@ import           Data.Sequence
 import           LLVM.General.AST (Instruction, Name, Named(..), Operand(..), Terminator)
 import qualified LLVM.General.AST as AST
 import           LLVM.General.AST.IntegerPredicate (IntegerPredicate(..))
-import           LLVM.General.AST.Type (i64)
+import           LLVM.General.AST.Type (i64, ptr)
 import           Supply (Supply)
 import qualified Supply
 import           Types.BlockState
@@ -24,6 +24,9 @@ localReference = AST.LocalReference i64
 
 globalReference :: Name -> Operand
 globalReference = ConstantOperand . C.GlobalReference i64
+
+funRef = ConstantOperand . C.GlobalReference funTy
+  where funTy = ptr $ AST.FunctionType i64 [i64] False
 
 callLambda :: Operand -> Operand -> Gen Operand
 callLambda fn arg = addInstruction $ AST.Call Nothing CC.C [] (Right fn) [(arg, [])] [] []
@@ -83,7 +86,7 @@ cbr cond tr fl = setTerminator $ AST.Do $ AST.CondBr cond tr fl []
 getVar :: String -> Gen Operand
 getVar vname = do
   value <- M.lookup vname <$> use symtab
-  maybe (error $ "Couldn't find variable with name " ++ show vname) return value
+  maybe (pure $ funRef (AST.Name vname)) load value
 
 createBlocks :: GeneratorState -> ([AST.BasicBlock], [AST.Definition])
 createBlocks gs = (toList $ M.mapWithKey makeBlock (view blocks gs), view closures gs)
