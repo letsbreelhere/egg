@@ -132,6 +132,10 @@ lift2 f mx my = do
 
 generateOperator :: String -> AnnExpr -> AnnExpr -> Gen Operand
 generateOperator o l r =
-  case o of
-    "+" -> lift2 add (genOperand l) (genOperand r)
-    ">" -> lift2 gt (genOperand l) (genOperand r)
+  let op = case o of
+        "+" -> add
+        ">" -> gt
+        "*" -> mul
+        "-" -> sub
+        _   -> error $ "Encountered unknown operator " ++ show o
+  in lift2 op (genOperand l) (genOperand r)

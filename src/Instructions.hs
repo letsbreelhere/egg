@@ -47,6 +47,9 @@ addInstruction instr = do
 add :: Operand -> Operand -> Gen Operand
 add a b = addInstruction $ AST.Add False False a b []
 
+mul :: Operand -> Operand -> Gen Operand
+mul a b = addInstruction $ AST.Mul False False a b []
+
 cmp :: IntegerPredicate -> Operand -> Operand -> Gen Operand
 cmp c a b = addInstruction $ AST.ICmp c a b []
 

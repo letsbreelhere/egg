@@ -32,7 +32,7 @@ throwError :: String -> Ann a
 throwError = Ann . throwE . TypeError
 
 runAnn :: Ann a -> (Either TypeError a, AnnState)
-runAnn ann = runIdentity . flip runStateT defaultAnnState . runExceptT . unAnn $ ann
+runAnn = runIdentity . flip runStateT defaultAnnState . runExceptT . unAnn
 
 constantType :: Constant -> EType
 constantType c =
@@ -62,4 +62,5 @@ resolveType cxt (e :> _) =
       in if tyThen == tyElse
            then tyThen
            else error "annotate: If/Else expressions don't match type"
+    BinOp{} -> Ty "int"
     _ -> error $ "annotate: unknown expression: " ++ show e

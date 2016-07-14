@@ -51,7 +51,7 @@ expr :: Parser Expr
 expr = makeExprParser expr' table
 
 table :: [[Operator Parser Expr]]
-table = [[mkInfix "+"], [mkInfix ">"]]
+table = [[mkInfix "+", mkInfix "-", mkInfix "*"], [mkInfix ">"]]
   where
     mkInfix name = InfixL (binOp <$> operator name)
 
