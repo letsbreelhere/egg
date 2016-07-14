@@ -15,7 +15,7 @@ compilerSpec = testGroup "Code generation and compiler"
       testInterpreterFile "return42.egg" (ExitFailure 42)
   , testCase "arithmetic" $
       testInterpreterFile "addition.egg" (ExitFailure 14)
-  , testCase "argument-less function calls" $
+  , testCase "global function calls" $
       testInterpreterFile "function_calls.egg" (ExitFailure 42)
   ]
 
