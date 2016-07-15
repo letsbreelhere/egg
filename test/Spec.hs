@@ -4,6 +4,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Compiler
 import Test.Lex
+import Test.Expr
 import Test.Parser
 
 main :: IO ()
@@ -13,4 +14,5 @@ tests = testGroup "Suite"
   [ lexerSpec
   , parserSpec
   , compilerSpec
+  , exprSpec
   ]

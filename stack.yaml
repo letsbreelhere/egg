@@ -16,3 +16,4 @@ extra-deps:
 resolver: lts-3.9
 extra-lib-dirs:
 - /usr/local/Cellar/libffi/3.0.13/lib
+local-bin-path:
