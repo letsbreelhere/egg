@@ -21,6 +21,8 @@ compilerSpec = testGroup "Code generation and compiler"
       testInterpreterFile "fact.egg" (ExitFailure 42)
   , testCase "lambdas" $
       testInterpreterFile "lam.egg" (ExitFailure 42)
+  , testCase "closures" $
+      testInterpreterFile "closure.egg" (ExitFailure 42)
   ]
 
 compile :: String -> IO String

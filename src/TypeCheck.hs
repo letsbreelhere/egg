@@ -62,5 +62,7 @@ resolveType cxt (e :> _) =
       in if tyThen == tyElse
            then tyThen
            else error "annotate: If/Else expressions don't match type"
-    BinOp{} -> Ty "int"
+    BinOp o _ _ -> Ty $ case o of
+                     ">" -> "bool"
+                     _   -> "int"
     _ -> error $ "annotate: unknown expression: " ++ show e

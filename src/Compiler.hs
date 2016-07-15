@@ -10,12 +10,14 @@ import Control.Exception.Base (try, SomeException)
 
 data CompilationError = ParseError ParseError
                       | LlvmError Codegen.LlvmError
+                      | CheckerError String
                       | OtherError SomeException
 
 instance Show CompilationError where
-  show (ParseError p) = "Parse error: "    ++ show p
-  show (LlvmError  l) = "Assembly error: " ++ show l
-  show (OtherError e) = "Exception before assembly: "  ++ show e
+  show (ParseError p)   = "Parse error: " ++ show p
+  show (LlvmError l)    = "Assembly error: " ++ show l
+  show (CheckerError s) = show s
+  show (OtherError e)   = "Exception before assembly: " ++ show e
 
 compile :: String -> IO (Either CompilationError String)
 compile input =

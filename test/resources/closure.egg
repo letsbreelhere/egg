@@ -1,0 +1,7 @@
+def const(i int) func (int) (int) [
+  ^ x -> i
+]
+
+def main() int [
+  ``const 42 23
+]
