@@ -1,4 +1,4 @@
-module TypeCheck where
+module TypeCheck (annotateDef) where
 
 import           Control.Cofree
 import           Data.Maybe (fromMaybe)
@@ -14,26 +14,6 @@ import           Control.Monad.Trans.Except
 import           Control.Monad.State
 import           Control.Monad.Identity
 
-data AnnState =
-       AnnState
-         { _tyVars :: Supply Int
-         , _equations :: [Equation EType]
-         , _symtab :: Map String EType
-         }
-
-defaultAnnState :: AnnState
-defaultAnnState = AnnState naturals [] Map.empty
-
-newtype TypeError = TypeError String
-
-newtype Ann a = Ann { unAnn :: ExceptT TypeError (StateT AnnState Identity) a }
-
-throwError :: String -> Ann a
-throwError = Ann . throwE . TypeError
-
-runAnn :: Ann a -> (Either TypeError a, AnnState)
-runAnn = runIdentity . flip runStateT defaultAnnState . runExceptT . unAnn
-
 constantType :: Constant -> EType
 constantType c =
   case c of
@@ -42,19 +22,24 @@ constantType c =
     B _  -> Ty "bool"
     Unit -> Ty "void"
 
-annotateDef :: Show a => FunDef a -> FunDef EType
-annotateDef fd = fd { _body = annotate fd (_body fd) }
+type Checker a = Either String a
 
-annotate :: Show b => FunDef a -> Expr' b -> AnnExpr
-annotate cxt e@(e' :> _) =
-  fmap (annotate cxt) e' :> resolveType cxt e
+annotateDef :: FunDef a -> Checker (FunDef EType)
+annotateDef fd = (\newBody -> fd { _body = newBody }) <$> annotate fd (_body fd)
 
-resolveType :: Show b => FunDef a -> Expr' b -> EType
+annotate :: FunDef a -> ExprTrans (Checker AnnExpr)
+annotate cxt e@(e' :> _) = do
+  typed <- resolveType cxt e
+  annotated <- sequenceA $ fmap (annotate cxt) e'
+  pure $ annotated :> typed
+
+resolveType :: FunDef a -> ExprTrans (Checker EType)
 resolveType cxt (e :> _) =
   case e of
-    Literal c -> constantType c
-    Var v -> fromMaybe
-               (error $ "annotate: Variable " ++ show v ++ " does not exist in this context")
+    Literal c -> pure $ constantType c
+    Var v -> maybe
+               (Left $ "Variable " ++ show v ++ " does not exist in this context")
+               Right
                (lookup v (_args cxt))
     If tyPred thn els ->
       let tyThen = resolveType cxt thn
@@ -62,7 +47,7 @@ resolveType cxt (e :> _) =
       in if tyThen == tyElse
            then tyThen
            else error "annotate: If/Else expressions don't match type"
-    BinOp o _ _ -> Ty $ case o of
+    BinOp o _ _ -> pure . Ty $ case o of
                      ">" -> "bool"
                      _   -> "int"
-    _ -> error $ "annotate: unknown expression: " ++ show e
+    _ -> Left "unknown expression"
