@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFunctor, DeriveFoldable #-}
+{-# LANGUAGE DeriveFunctor, DeriveFoldable, Rank2Types #-}
 
 module Types.Expr (
     BareExpr(..),
@@ -11,6 +11,7 @@ module Types.Expr (
     binOp,
     exprIf,
     lam,
+    ExprTrans
     ) where
 
 import           Data.Monoid
@@ -63,6 +64,8 @@ type Expr' ann = Cofree BareExpr ann
 type AnnExpr = Expr' EType
 
 type Expr = Expr' ()
+
+type ExprTrans t = forall ann . Cofree BareExpr ann -> t
 
 literal :: Constant -> Expr
 literal c = Literal c :> ()
