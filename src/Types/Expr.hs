@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFunctor, DeriveFoldable, Rank2Types #-}
+{-# LANGUAGE DeriveFunctor, DeriveFoldable, DeriveTraversable, Rank2Types #-}
 
 module Types.Expr (
     BareExpr(..),
@@ -27,7 +27,7 @@ data BareExpr e = Literal Constant
                 | BinOp String e e
                 | If e e e
                 | Lam String e
-  deriving (Eq, Show, Functor, Foldable)
+  deriving (Eq, Show, Functor, Foldable, Traversable)
 
 instance Eq1 BareExpr where
   eq1 (Literal c) (Literal c') = c == c'
@@ -49,15 +49,6 @@ instance Show1 BareExpr where
           BinOp s e e' -> show e ++ " " ++ s ++ " " ++ show e'
           If p t e     -> "if " ++ show p ++ " then " ++ show t ++ " else " ++ show e
           Lam v e      -> "^ " ++ v ++ " -> " ++ show e
-
-instance Traversable BareExpr where
-  sequenceA e =
-    case e of
-      Literal c   -> pure $ Literal c
-      Var v       -> pure $ Var v
-      l :@: r     -> (:@:) <$> l <*> r
-      BinOp o l r -> BinOp o <$> l <*> r
-      If p t e    -> If <$> p <*> t <*> e
 
 type Expr' ann = Cofree BareExpr ann
 
