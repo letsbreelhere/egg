@@ -5,7 +5,6 @@ import qualified Lexer
 import qualified Parser
 import Data.Bifunctor (first)
 import Text.Megaparsec.Error (ParseError)
-import Control.Monad.IO.Class (liftIO)
 import Control.Exception.Base (try, SomeException)
 
 data CompilationError = ParseError ParseError

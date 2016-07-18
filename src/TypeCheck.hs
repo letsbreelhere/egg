@@ -1,18 +1,10 @@
-module TypeCheck (annotateDef) where
+module TypeCheck (annotateDef, globalCheckerEnv, CheckerEnv) where
 
 import           Control.Cofree
-import           Data.Maybe (fromMaybe)
 import           Types.EType
 import           Types.Expr
 import           Types.FunDef
 import           Types.Constant
-import           Supply
-import           Data.Map (Map)
-import qualified Data.Map as Map
-import           Unification
-import           Control.Monad.Trans.Except
-import           Control.Monad.State
-import           Control.Monad.Identity
 
 constantType :: Constant -> EType
 constantType c =
@@ -25,13 +17,19 @@ constantType c =
 type Checker a = Either String a
 type CheckerEnv = [(String, EType)]
 
-annotateDef :: FunDef a -> Checker (FunDef EType)
-annotateDef fd = (\newBody -> fd { _body = newBody }) <$> annotate fd (_body fd)
+globalCheckerEnv :: [FunDef a] -> CheckerEnv
+globalCheckerEnv = map functionEntry
 
-annotate :: FunDef a -> ExprTrans (Checker AnnExpr)
-annotate cxt e@(e' :> _) = do
-  typed <- resolveType (_args cxt) e
-  annotated <- sequenceA $ fmap (annotate cxt) e'
+functionEntry :: FunDef a -> (String, EType)
+functionEntry fd = (_name fd, undefined :-> _ret fd)
+
+annotateDef :: CheckerEnv -> FunDef a -> Checker (FunDef EType)
+annotateDef env fd = (\newBody -> fd { _body = newBody }) <$> annotate env fd (_body fd)
+
+annotate :: CheckerEnv -> FunDef a -> ExprTrans (Checker AnnExpr)
+annotate env cxt e@(e' :> _) = do
+  typed <- resolveType (env ++ _args cxt) e
+  annotated <- sequenceA $ fmap (annotate env cxt) e'
   pure $ annotated :> typed
 
 resolveType :: CheckerEnv -> ExprTrans (Checker EType)
@@ -42,7 +40,7 @@ resolveType env (e :> _) =
                (Left $ "Variable " ++ show v ++ " does not exist in this context")
                Right
                (lookup v env)
-    If tyPred thn els ->
+    If _ thn els ->
       let tyThen = resolveType env thn
           tyElse = resolveType env els
       in if tyThen == tyElse
@@ -56,4 +54,4 @@ resolveType env (e :> _) =
     Lam v e -> let vTy = Ty "int"
                    env' = (v, vTy) : env
                in (vTy :->) <$> resolveType env' e
-    _ -> Left "unknown expression"
+    _ :@: _ -> pure $ Ty "int"

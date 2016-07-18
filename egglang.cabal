@@ -31,6 +31,8 @@ library
                    , Parser
                    , Supply
                    , Codegen
+                   , Codegen.Util
+                   , Codegen.LambdaLifting
                    , Compiler
                    , LLVM
                    , Instructions
@@ -46,6 +48,7 @@ library
                    , mtl
   extensions: RankNTypes
   default-language:    Haskell2010
+  ghc-options: -fwarn-unused-imports -fwarn-unused-matches
 
 executable eggc
   hs-source-dirs:      app
