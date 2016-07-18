@@ -23,31 +23,37 @@ constantType c =
     Unit -> Ty "void"
 
 type Checker a = Either String a
+type CheckerEnv = [(String, EType)]
 
 annotateDef :: FunDef a -> Checker (FunDef EType)
 annotateDef fd = (\newBody -> fd { _body = newBody }) <$> annotate fd (_body fd)
 
 annotate :: FunDef a -> ExprTrans (Checker AnnExpr)
 annotate cxt e@(e' :> _) = do
-  typed <- resolveType cxt e
+  typed <- resolveType (_args cxt) e
   annotated <- sequenceA $ fmap (annotate cxt) e'
   pure $ annotated :> typed
 
-resolveType :: FunDef a -> ExprTrans (Checker EType)
-resolveType cxt (e :> _) =
+resolveType :: CheckerEnv -> ExprTrans (Checker EType)
+resolveType env (e :> _) =
   case e of
     Literal c -> pure $ constantType c
     Var v -> maybe
                (Left $ "Variable " ++ show v ++ " does not exist in this context")
                Right
-               (lookup v (_args cxt))
+               (lookup v env)
     If tyPred thn els ->
-      let tyThen = resolveType cxt thn
-          tyElse = resolveType cxt els
+      let tyThen = resolveType env thn
+          tyElse = resolveType env els
       in if tyThen == tyElse
            then tyThen
            else error "annotate: If/Else expressions don't match type"
     BinOp o _ _ -> pure . Ty $ case o of
                      ">" -> "bool"
                      _   -> "int"
+    -- TODO: when inference is implemented this should be able to infer argument
+    -- type
+    Lam v e -> let vTy = Ty "int"
+                   env' = (v, vTy) : env
+               in (vTy :->) <$> resolveType env' e
     _ -> Left "unknown expression"
