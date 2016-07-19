@@ -1,13 +1,13 @@
 module Types.GeneratorState where
 
-import           LLVM.General.AST (Definition, Instruction, Name(..), Named(..), Operand(..), Terminator)
-import           Data.Map (Map)
+import           LLVM.General.AST (Definition, Name(..), Operand(..))
 import           Types.BlockState
 import           Supply (Supply)
 import qualified Supply
-import           Control.Lens (Traversal', Lens', lens, view, Identity, (&), (%~), _Just)
+import           Control.Lens (Traversal', Lens', lens, view, (&), (%~), _Just)
+import           Data.Map (Map)
 import qualified Data.Map as M
-import qualified Data.Sequence as Seq
+import Types.EType
 
 type SymbolTable = Map String Operand
 
@@ -18,7 +18,8 @@ data GeneratorState =
          , _symtab :: SymbolTable
          , _unnamedInstr :: Supply Word
          , _namedInstr :: Supply String
-         , _closures :: [Definition]
+         , _closures :: Map String Definition
+         , _closureVars :: Map String [(String, EType)]
          }
   deriving Show
 
@@ -28,8 +29,11 @@ activeBlock = lens _activeBlock (\g s -> g { _activeBlock = s })
 symtab :: Lens' GeneratorState SymbolTable
 symtab = lens _symtab (\g s -> g { _symtab = s })
 
-closures :: Lens' GeneratorState [Definition]
+closures :: Lens' GeneratorState (Map String Definition)
 closures = lens _closures (\g s -> g { _closures = s })
+
+closureVars :: Lens' GeneratorState (Map String [(String, EType)])
+closureVars = lens _closureVars (\g s -> g { _closureVars = s })
 
 unnamedInstr :: Lens' GeneratorState (Supply Word)
 unnamedInstr = lens _unnamedInstr (\g s -> g { _unnamedInstr = s })
@@ -42,11 +46,12 @@ blocks = lens _blocks (\g s -> g { _blocks = s })
 
 defaultGeneratorState = GeneratorState
   { _unnamedInstr = fmap fromIntegral Supply.naturals
-  , _namedInstr = Supply.variableNames
-  , _symtab = M.empty
-  , _blocks = M.empty
-  , _activeBlock = Name "NOBLOCK"
-  , _closures = []
+  , _namedInstr   = Supply.variableNames
+  , _symtab       = M.empty
+  , _blocks       = M.empty
+  , _activeBlock  = Name "NOBLOCK"
+  , _closures     = M.empty
+  , _closureVars  = M.empty
   }
 
 currentBlockState :: Traversal' GeneratorState BlockState

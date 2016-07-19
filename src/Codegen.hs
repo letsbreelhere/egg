@@ -1,5 +1,6 @@
 module Codegen (LlvmError, toAssembly) where
 
+import qualified Data.Map as M
 import           Control.Monad.Except (runExceptT)
 import           Types.FunDef
 import           LLVM (generateModule)
@@ -15,7 +16,7 @@ newtype LlvmError = LlvmError String
 toAssembly :: [FunDef ()] -> IO (Either LlvmError String)
 toAssembly defs =
   let globalEnv = globalCheckerEnv defs
-      definitions = concatMap (functionToDefinitions globalEnv) defs
+      definitions = concatMap (M.elems . functionToDefinitions globalEnv) defs
       generatedModule = generateModule definitions "Egg!"
   in withContext $ \context ->
     fmap (first LlvmError) . runExceptT $ withModuleFromAST context generatedModule

@@ -1,8 +1,13 @@
 module Codegen.Util where
 
+import Data.Foldable (toList)
 import           Codegen.LambdaLifting
 import           Control.Lens
 import           Control.Monad (forM_)
+import           Data.Expr (freeVariables)
+import           Data.Map (Map)
+import qualified Data.Map as M
+import           Data.Maybe (fromMaybe)
 import           Types.FunDef
 import           Types.EType
 import           TypeCheck
@@ -18,7 +23,7 @@ import qualified Types.Gen as Gen
 import           Types.GeneratorState
 import           Control.Cofree
 
-functionToDefinitions :: Show a => CheckerEnv -> FunDef a -> [Definition]
+functionToDefinitions :: Show a => CheckerEnv -> FunDef a -> Map String Definition
 functionToDefinitions env def =
   let def' = either error id $ annotateDef env def
       args = _args def'
@@ -28,9 +33,9 @@ functionToDefinitions env def =
       (generatedBodyBlocks, cls) = bodyBlocks args body
       mainFunctionDefn = globalDefinition (reifyAbstractType retTy) name (map sigOf args)
                            generatedBodyBlocks
-  in mainFunctionDefn : cls
+  in M.insert name mainFunctionDefn cls
 
-bodyBlocks :: [Signature] -> AnnExpr -> ([BasicBlock], [Definition])
+bodyBlocks :: [Signature] -> AnnExpr -> ([BasicBlock], Map String Definition)
 bodyBlocks args body = createBlocks . Gen.execCodegen $ do
   entryName <- Gen.addBlock "entry"
   activeBlock .= entryName
@@ -59,7 +64,7 @@ genOperand expr =
     l :@: r :> _     -> generateApplication l r
     BinOp o l r :> _ -> generateOperator o l r
     If p t e :> ty   -> generateIf ty p t e
-    Lam v e :> _     -> generateLambda (functionToDefinitions []) v e
+    Lam v e :> _     -> generateLambda (map (\n -> (n, error "Closure env typechecking")) . toList $ freeVariables v e) (functionToDefinitions []) v e
 
 generateConstantOperand :: Constant -> LLVM.Constant
 generateConstantOperand c =
@@ -68,7 +73,19 @@ generateConstantOperand c =
     B b -> LLVM.Int 1 $ fromIntegral $ fromEnum b
 
 generateApplication :: AnnExpr -> AnnExpr -> Gen Operand
-generateApplication l r = lift2 callLambda (genOperand l) (genOperand r)
+generateApplication l r = do
+  fn <- genOperand l
+  lamarg <- genOperand r
+  let fname = case fn of
+                ConstantOperand (LLVM.GlobalReference _ (Name name)) -> Just name
+                _ -> Nothing
+  closureArgSigs <- case fname of
+    Just name -> uses closureVars (M.lookup name)
+    Nothing   -> pure Nothing
+  closureEnv <- fetchClosureOperands (fromMaybe [] closureArgSigs)
+  call fn lamarg closureEnv
+  where fetchClosureOperands :: [(String, EType)] -> Gen [Operand]
+        fetchClosureOperands = traverse (getVar . fst)
 
 generateIf :: EType -> AnnExpr -> AnnExpr -> AnnExpr -> Gen Operand
 generateIf ty p t e = do

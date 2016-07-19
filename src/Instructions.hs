@@ -1,7 +1,6 @@
 module Instructions where
 
 import           Control.Lens hiding ((|>))
-import           Control.Monad.State
 import           Data.Foldable (toList)
 import qualified Data.Map as M
 import           Data.Maybe (fromMaybe)
@@ -10,7 +9,6 @@ import           LLVM.General.AST (Instruction, Name, Named(..), Operand(..), Te
 import qualified LLVM.General.AST as AST
 import           LLVM.General.AST.IntegerPredicate (IntegerPredicate(..))
 import           LLVM.General.AST.Type (i64, ptr)
-import           Supply (Supply)
 import qualified Supply
 import           Types.BlockState
 import           Types.Gen
@@ -28,11 +26,8 @@ globalReference = ConstantOperand . C.GlobalReference i64
 funRef = ConstantOperand . C.GlobalReference funTy
   where funTy = ptr $ AST.FunctionType i64 [i64] False
 
-callLambda :: Operand -> Operand -> Gen Operand
-callLambda fn arg = addInstruction $ AST.Call Nothing CC.C [] (Right fn) [(arg, [])] [] []
-
-call :: Operand -> [Operand] -> Gen Operand
-call fn args = addInstruction $ AST.Call Nothing CC.C [] (Right fn) (toArgs args) [] []
+call :: Operand -> Operand -> [Operand] -> Gen Operand
+call fn lamarg closure = addInstruction $ AST.Call Nothing CC.C [] (Right fn) (toArgs (lamarg:closure)) [] []
   where toArgs :: [Operand] -> [(Operand, [A.ParameterAttribute])]
         toArgs = map (\x -> (x, []))
 
@@ -91,7 +86,7 @@ getVar vname = do
   value <- M.lookup vname <$> use symtab
   maybe (pure $ funRef (AST.Name vname)) load value
 
-createBlocks :: GeneratorState -> ([AST.BasicBlock], [AST.Definition])
+createBlocks :: GeneratorState -> ([AST.BasicBlock], M.Map String AST.Definition)
 createBlocks gs = (toList $ M.mapWithKey makeBlock (view blocks gs), view closures gs)
 
 makeBlock :: Name -> BlockState -> AST.BasicBlock
