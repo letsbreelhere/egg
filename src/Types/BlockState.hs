@@ -3,7 +3,7 @@ module Types.BlockState where
 import qualified Data.Sequence as Seq
 import           Data.Sequence (Seq)
 import           Control.Lens
-import           LLVM.General.AST (Instruction, Name, Named(..), Operand(..), Terminator)
+import           LLVM.General.AST (Instruction, Named(..), Terminator)
 
 data BlockState =
        BlockState

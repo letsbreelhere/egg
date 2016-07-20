@@ -6,7 +6,6 @@ import           Control.Monad (void)
 import           Text.Megaparsec
 import           Types.Constant
 import           Types.Token
-import           Control.Applicative ((<$))
 
 type Lexer = Parsec String
 

@@ -9,7 +9,6 @@ import           LLVM.General.AST (Instruction, Name, Named(..), Operand(..), Te
 import qualified LLVM.General.AST as AST
 import           LLVM.General.AST.IntegerPredicate (IntegerPredicate(..))
 import           LLVM.General.AST.Type (i64, ptr)
-import qualified Supply
 import           Types.BlockState
 import           Types.Gen
 import           Types.GeneratorState
@@ -24,17 +23,25 @@ globalReference :: Name -> Operand
 globalReference = ConstantOperand . C.GlobalReference i64
 
 funRef = ConstantOperand . C.GlobalReference funTy
-  where funTy = ptr $ AST.FunctionType i64 [i64] False
+  where
+    funTy = ptr $ AST.FunctionType i64 [i64] False
 
 call :: Operand -> Operand -> [Operand] -> Gen Operand
-call fn lamarg closure = addInstruction $ AST.Call Nothing CC.C [] (Right fn) (toArgs (lamarg:closure)) [] []
-  where toArgs :: [Operand] -> [(Operand, [A.ParameterAttribute])]
-        toArgs = map (\x -> (x, []))
+call fn lamarg closure = addInstruction $ AST.Call
+                                            Nothing
+                                            CC.C
+                                            []
+                                            (Right fn)
+                                            (toArgs (lamarg : closure))
+                                            []
+                                            []
+  where
+    toArgs :: [Operand] -> [(Operand, [A.ParameterAttribute])]
+    toArgs = map (\x -> (x, []))
 
 addInstruction :: Instruction -> Gen Operand
 addInstruction instr = do
-  (n, unnamedInstr') <- uses unnamedInstr Supply.fresh
-  unnamedInstr .= unnamedInstr'
+  n <- freshUnnamed
   let ref = AST.UnName n
   currentBlockState . stack %= (|> (ref := instr))
   return (localReference ref)

@@ -1,19 +1,18 @@
 flags: {}
 extra-package-dbs: []
+local-bin-path: null
+extra-lib-dirs:
+- /usr/local/Cellar/libffi/3.0.13/lib
 packages:
 - '.'
 extra-deps:
-- intero-0.1.16
 - base-orphans-0.5.4
-- cabal-helper-0.6.3.1
-- cpphs-1.20.1
-- ghc-mod-5.5.0.0
+- kan-extensions-5.0.1
+- lens-4.14
 - llvm-general-3.5.1.2
 - llvm-general-pure-3.5.1.0
 - megaparsec-4.2.0
+- reflection-2.1.2
 - semigroupoids-5.0.1
 - vector-0.11.0.0
 resolver: lts-3.9
-extra-lib-dirs:
-- /usr/local/Cellar/libffi/3.0.13/lib
-local-bin-path:

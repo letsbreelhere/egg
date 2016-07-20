@@ -2,7 +2,7 @@ module Codegen.Util where
 
 import Data.Foldable (toList)
 import           Codegen.LambdaLifting
-import           Control.Lens
+import           Control.Lens hiding ((:>))
 import           Control.Monad (forM_)
 import           Data.Expr (freeVariables)
 import           Data.Map (Map)
@@ -51,7 +51,7 @@ sigOf (v, ty) = (reifyAbstractType ty, Name v)
 reifyAbstractType :: EType -> Type
 reifyAbstractType ty =
   case ty of
-    t :-> u   -> ptr $ FunctionType (reifyAbstractType u) [reifyAbstractType t] False
+    t :-> u   -> ptr $ FunctionType (reifyAbstractType u) [reifyAbstractType t, i64] False
     Ty "bool" -> i1
     Ty "int"  -> i64
     Ty "void" -> void
@@ -64,7 +64,9 @@ genOperand expr =
     l :@: r :> _     -> generateApplication l r
     BinOp o l r :> _ -> generateOperator o l r
     If p t e :> ty   -> generateIf ty p t e
-    Lam v e :> _     -> generateLambda (map (\n -> (n, error "Closure env typechecking")) . toList $ freeVariables v e) (functionToDefinitions []) v e
+    Lam v e :> _     -> let freeVars = toList $ freeVariables v e
+                            sigs = map (\n -> (n, Ty "int")) freeVars
+                        in generateLambda sigs (functionToDefinitions []) v e
 
 generateConstantOperand :: Constant -> LLVM.Constant
 generateConstantOperand c =

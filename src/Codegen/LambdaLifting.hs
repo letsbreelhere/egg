@@ -30,7 +30,7 @@ generateLambda freeVars functionToDefinitions v e = do
       lambdaArg = (v, Ty "int")
       retTy = Ty "int"
       tmpDef = FunDef closureName (lambdaArg : closureArgs) e retTy
-      llvmTy = ptr $ FunctionType i64 [i64] False
+      llvmTy = ptr $ FunctionType i64 (i64 : map (const i64) freeVars) False
   closures %= mappend (functionToDefinitions tmpDef)
   closureVars %= M.insert closureName freeVars
   pure . ConstantOperand . LLVM.GlobalReference llvmTy . Name $ closureName

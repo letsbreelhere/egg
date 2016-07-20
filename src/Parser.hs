@@ -6,7 +6,6 @@ import           Text.Megaparsec.Combinator
 import           Text.Megaparsec.ShowToken (showToken)
 import           Text.Megaparsec.Expr
 import           Text.Megaparsec.Error (ParseError, Message(..))
-import           Text.Megaparsec.Pos (updatePosChar)
 import           Types.Token
 import qualified Types.Token as Token
 import           Types.EType
@@ -14,8 +13,7 @@ import           Types.Expr
 import qualified Types.Expr as Expr
 import           Types.Constant
 import           Types.FunDef
-import           Lexer
-import           Control.Applicative (many, (<$))
+import           Control.Applicative (many)
 
 type Parser = Parsec [Token]
 
@@ -35,11 +33,12 @@ function = do
 
 typeSignature :: Parser EType
 typeSignature = choice [funTy, Ty <$> anyIdentifier]
-  where funTy = do
-          keyword "func"
-          l <- parens typeSignature
-          r <- parens typeSignature
-          pure (l :-> r)
+  where
+    funTy = do
+      keyword "func"
+      l <- parens typeSignature
+      r <- parens typeSignature
+      pure (l :-> r)
 
 parseArgList :: Parser [Signature]
 parseArgList = flip sepBy comma $ do
@@ -130,6 +129,7 @@ satisfy p = do
   t <- Prim.token updatePosToken testToken
   setPosition $ _pos t
   pure $ _lexeme t
+
   where
     testToken t = if p (_lexeme t)
                     then Right t

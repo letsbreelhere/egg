@@ -1,7 +1,5 @@
 module Test.Compiler where
 
-import qualified Parser
-import qualified Lexer
 import qualified Compiler
 import Test.Tasty
 import Test.Tasty.HUnit

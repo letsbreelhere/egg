@@ -11,44 +11,54 @@ module Types.Expr (
     binOp,
     exprIf,
     lam,
-    ExprTrans
+    ExprTrans,
     ) where
 
-import           Data.Monoid
 import           Types.EType
 import           Types.Constant
 import           Control.Cofree
 import           Data.Functor.Classes (Eq1, eq1, Show1, showsPrec1)
 
 infixl 9 :@:
+
 data BareExpr e = Literal Constant
                 | Var String
-                | e :@: e
+                | (:@:) e e
                 | BinOp String e e
                 | If e e e
                 | Lam String e
-  deriving (Eq, Show, Functor, Foldable, Traversable)
+  deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 instance Eq1 BareExpr where
   eq1 (Literal c) (Literal c') = c == c'
   eq1 (Var s) (Var s') = s == s'
-  eq1 (a :@: b) (a' :@: b') = (a,b) == (a',b')
-  eq1 (BinOp s e f) (BinOp s' e' f') = (s,e,f) == (s',e',f')
-  eq1 (If p t e) (If p' t' e') = (p,t,e) == (p',t',e')
-  eq1 (Lam v e) (Lam v' e') = (v,e) == (v',e')
+  eq1 (a :@: b) (a' :@: b') = (a, b) == (a', b')
+  eq1 (BinOp s e f) (BinOp s' e' f') = (s, e, f) == (s', e', f')
+  eq1 (If p t e) (If p' t' e') = (p, t, e) == (p', t', e')
+  eq1 (Lam v e) (Lam v' e') = (v, e) == (v', e')
   eq1 _ _ = False
 
 instance Show1 BareExpr where
-  showsPrec1 n e s = x ++ s
-    where
-      x =
-        case e of
-          Literal c    -> show c
-          Var v        -> "%" ++ v
-          l :@: r      -> show l ++ "@" ++ show r
-          BinOp s e e' -> show e ++ " " ++ s ++ " " ++ show e'
-          If p t e     -> "if " ++ show p ++ " then " ++ show t ++ " else " ++ show e
-          Lam v e      -> "^ " ++ v ++ " -> " ++ show e
+  showsPrec1 n e =
+    case e of
+      Literal c -> showString $ showSimple c
+      Var v -> showString v
+      l :@: r -> showParen (n > 10) $
+        showString "`" .
+        showsPrec n l .
+        showString " " .
+        showsPrec 10 r
+      BinOp s e e' -> showParen (n > 1) $
+        showsPrec 2 e .
+        showString (" " ++ s ++ " ") .
+        showsPrec 2 e'
+      If p t e -> showString "if " .
+                  showsPrec n p .
+                  showString " then " .
+                  showsPrec n t .
+                  showString " else " .
+                  showsPrec n e
+      Lam v e -> showString "^ " . showString v . showString " -> " . showsPrec n e
 
 type Expr' ann = Cofree BareExpr ann
 
@@ -56,7 +66,7 @@ type AnnExpr = Expr' EType
 
 type Expr = Expr' ()
 
-type ExprTrans t = forall ann . Cofree BareExpr ann -> t
+type ExprTrans t = forall ann. Cofree BareExpr ann -> t
 
 literal :: Constant -> Expr
 literal c = Literal c :> ()
