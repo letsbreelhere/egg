@@ -44,6 +44,7 @@ namedInstr = lens _namedInstr (\g s -> g { _namedInstr = s })
 blocks :: Lens' GeneratorState (Map Name BlockState)
 blocks = lens _blocks (\g s -> g { _blocks = s })
 
+defaultGeneratorState :: GeneratorState
 defaultGeneratorState = GeneratorState
   { _unnamedInstr = fmap fromIntegral Supply.naturals
   , _namedInstr   = Supply.variableNames

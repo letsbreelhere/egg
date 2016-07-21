@@ -39,8 +39,8 @@ instance Eq1 BareExpr where
   eq1 _ _ = False
 
 instance Show1 BareExpr where
-  showsPrec1 n e =
-    case e of
+  showsPrec1 n expr =
+    case expr of
       Literal c -> showString $ showSimple c
       Var v -> showString v
       l :@: r -> showParen (n > 10) $

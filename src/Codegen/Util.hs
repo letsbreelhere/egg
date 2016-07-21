@@ -3,7 +3,7 @@ module Codegen.Util where
 import Data.Foldable (toList)
 import           Codegen.LambdaLifting
 import           Control.Comonad.Cofree
-import           Control.Lens hiding ((:<))
+import           Control.Lens hiding ((:<), op)
 import           Control.Monad (forM_)
 import           Data.Expr (freeVariables)
 import           Data.Map (Map)
@@ -55,6 +55,8 @@ reifyAbstractType ty =
     Ty "bool" -> i1
     Ty "int"  -> i64
     Ty "void" -> void
+    Ty t      -> error $ "Encountered unknown type " ++ show t
+    TyVar _   -> error "Type var encountered during reification"
 
 genOperand :: AnnExpr -> Gen Operand
 genOperand expr =
@@ -73,6 +75,7 @@ generateConstantOperand c =
   case c of
     I i -> LLVM.Int 64 $ fromIntegral i
     B b -> LLVM.Int 1 $ fromIntegral $ fromEnum b
+    _   -> error "Encountered unknown constant"
 
 generateApplication :: AnnExpr -> AnnExpr -> Gen Operand
 generateApplication l r = do
@@ -100,15 +103,15 @@ generateIf ty p t e = do
   activeBlock .= ifThen
   thenValue <- genOperand t
   br ifExit
-  ifThen <- use activeBlock
+  ifThen' <- use activeBlock
 
   activeBlock .= ifElse
   elseValue <- genOperand e
   br ifExit
-  ifElse <- use activeBlock
+  ifElse' <- use activeBlock
 
   activeBlock .= ifExit
-  phi (reifyAbstractType ty) [(thenValue, ifThen), (elseValue, ifElse)]
+  phi (reifyAbstractType ty) [(thenValue, ifThen'), (elseValue, ifElse')]
 
 lift2 :: Monad m => (a -> b -> m c) -> m a -> m b -> m c
 lift2 f mx my = do

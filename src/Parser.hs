@@ -14,12 +14,14 @@ import qualified Types.Expr as Expr
 import           Types.Constant
 import           Types.FunDef
 import           Control.Applicative (many)
+import           Control.Monad (void)
 
 type Parser = Parsec [Token]
 
 parse :: String -> [Token] -> Either ParseError [FunDef ()]
 parse = runParser program
 
+program :: Parser [FunDef ()]
 program = many function <* eof
 
 function :: Parser (FunDef ())
@@ -52,7 +54,7 @@ expr = makeExprParser expr' table
 table :: [[Operator Parser Expr]]
 table = [[mkInfix "+", mkInfix "-", mkInfix "*"], [mkInfix ">"]]
   where
-    mkInfix name = InfixL (binOp <$> operator name)
+    mkInfix name = InfixL (binOp name <$ operator name)
 
 expr' :: Parser Expr
 expr' = choice
@@ -91,23 +93,23 @@ lambda = do
   body <- expr
   pure (lam v body)
 
-comma = operator ","
+comma :: Parser ()
+comma = void $ operator ","
 
+parens :: Parser a -> Parser a
 parens = between (operator "(") (operator ")")
 
+squareBraces :: Parser a -> Parser a
 squareBraces = between (operator "[") (operator "]")
 
-withTycon :: (a -> Lexeme) -> a -> Parser a
-withTycon con a = a <$ token (con a)
+withTycon :: (a -> Lexeme) -> a -> Parser ()
+withTycon con a = void $ a <$ token (con a)
 
-keyword :: String -> Parser String
+keyword :: String -> Parser ()
 keyword = withTycon Keyword
 
-operator :: String -> Parser String
+operator :: String -> Parser ()
 operator = withTycon Operator
-
-identifier :: String -> Parser String
-identifier = withTycon Identifier
 
 anyIdentifier :: Parser String
 anyIdentifier = do

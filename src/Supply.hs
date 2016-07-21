@@ -3,10 +3,6 @@
 module Supply (Supply, fresh, variableNames, iterate, naturals) where
 
 import           Prelude hiding (iterate)
-import           Control.Monad.State
-import           Control.Applicative (ZipList(..))
-import           Control.Arrow ((&&&))
-import           Data.Bifunctor (second)
 
 data Supply a = a :& Supply a
   deriving (Functor)

@@ -33,8 +33,8 @@ annotate env cxt e@(_ :< e') = do
   pure $ typed :< annotated
 
 resolveType :: CheckerEnv -> ExprTrans (Checker EType)
-resolveType env (_ :< e) =
-  case e of
+resolveType env (_ :< expr) =
+  case expr of
     Literal c -> pure $ constantType c
     Var v -> maybe
                (Left $ "Variable " ++ show v ++ " does not exist in this context")

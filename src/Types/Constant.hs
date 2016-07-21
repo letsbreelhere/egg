@@ -9,10 +9,11 @@ data Constant = I Integer
   deriving (Ord, Eq, Show)
 
 instance ShowToken Constant where
-  showToken c = case c of
-    I i -> show i
-    C c -> show c
-    B b -> show b
+  showToken x = case x of
+    I i  -> show i
+    C c  -> show c
+    B b  -> show b
+    Unit -> "unit"
 
 showSimple :: Constant -> String
 showSimple = showToken

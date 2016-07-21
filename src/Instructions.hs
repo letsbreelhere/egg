@@ -1,6 +1,7 @@
 module Instructions where
 
 import           Control.Lens hiding ((|>))
+import           Control.Monad (void)
 import           Data.Foldable (toList)
 import qualified Data.Map as M
 import           Data.Maybe (fromMaybe)
@@ -22,6 +23,7 @@ localReference = AST.LocalReference i64
 globalReference :: Name -> Operand
 globalReference = ConstantOperand . C.GlobalReference i64
 
+funRef :: Name -> Operand
 funRef = ConstantOperand . C.GlobalReference funTy
   where
     funTy = ptr $ AST.FunctionType i64 [i64] False
@@ -67,14 +69,14 @@ gt = cmp SGT
 sub :: Operand -> Operand -> Gen Operand
 sub a b = addInstruction $ AST.Sub False False a b []
 
-store :: Operand -> Operand -> Gen Operand
-store ptr val = addInstruction $ AST.Store False ptr val Nothing 0 []
+store :: Operand -> Operand -> Gen ()
+store pointer val = void . addInstruction $ AST.Store False pointer val Nothing 0 []
 
 alloca :: AST.Type -> Gen Operand
 alloca t = addInstruction $ AST.Alloca t Nothing 0 []
 
 load :: Operand -> Gen Operand
-load ptr = addInstruction $ AST.Load False ptr Nothing 0 []
+load pointer = addInstruction $ AST.Load False pointer Nothing 0 []
 
 setTerminator :: Named Terminator -> Gen ()
 setTerminator term = currentBlockState . terminator .= Just term
