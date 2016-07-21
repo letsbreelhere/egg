@@ -2,13 +2,13 @@
 
 module Data.Expr where
 
-import Control.Cofree
+import Control.Comonad.Cofree
 import Types.Expr
 import Data.Set (Set)
 import qualified Data.Set as Set
 
 freeVariables :: String -> ExprTrans (Set String)
-freeVariables bound (expr :> _) = case expr of
+freeVariables bound (_ :< expr) = case expr of
   Var e | e /= bound -> Set.singleton e
   e1 :@: e2          -> foldMap (freeVariables bound) [e1,e2]
   BinOp _ e1 e2      -> foldMap (freeVariables bound) [e1,e2]

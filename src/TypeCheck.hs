@@ -1,6 +1,6 @@
 module TypeCheck (annotateDef, globalCheckerEnv, CheckerEnv) where
 
-import           Control.Cofree
+import           Control.Comonad.Cofree
 import           Types.EType
 import           Types.Expr
 import           Types.FunDef
@@ -27,13 +27,13 @@ annotateDef :: CheckerEnv -> FunDef a -> Checker (FunDef EType)
 annotateDef env fd = (\newBody -> fd { _body = newBody }) <$> annotate env fd (_body fd)
 
 annotate :: CheckerEnv -> FunDef a -> ExprTrans (Checker AnnExpr)
-annotate env cxt e@(e' :> _) = do
+annotate env cxt e@(_ :< e') = do
   typed <- resolveType (env ++ _args cxt) e
   annotated <- sequenceA $ fmap (annotate env cxt) e'
-  pure $ annotated :> typed
+  pure $ typed :< annotated
 
 resolveType :: CheckerEnv -> ExprTrans (Checker EType)
-resolveType env (e :> _) =
+resolveType env (_ :< e) =
   case e of
     Literal c -> pure $ constantType c
     Var v -> maybe

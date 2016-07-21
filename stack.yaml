@@ -7,6 +7,7 @@ packages:
 - '.'
 extra-deps:
 - base-orphans-0.5.4
+- free-4.12.4
 - kan-extensions-5.0.1
 - lens-4.14
 - llvm-general-3.5.1.2

@@ -2,7 +2,8 @@ module Codegen.Util where
 
 import Data.Foldable (toList)
 import           Codegen.LambdaLifting
-import           Control.Lens hiding ((:>))
+import           Control.Comonad.Cofree
+import           Control.Lens hiding ((:<))
 import           Control.Monad (forM_)
 import           Data.Expr (freeVariables)
 import           Data.Map (Map)
@@ -21,7 +22,6 @@ import           Types.Expr (AnnExpr, BareExpr(..))
 import           Types.Gen (Gen)
 import qualified Types.Gen as Gen
 import           Types.GeneratorState
-import           Control.Cofree
 
 functionToDefinitions :: Show a => CheckerEnv -> FunDef a -> Map String Definition
 functionToDefinitions env def =
@@ -59,14 +59,14 @@ reifyAbstractType ty =
 genOperand :: AnnExpr -> Gen Operand
 genOperand expr =
   case expr of
-    Literal c :> _   -> return . ConstantOperand . generateConstantOperand $ c
-    Var v :> _       -> getVar v
-    l :@: r :> _     -> generateApplication l r
-    BinOp o l r :> _ -> generateOperator o l r
-    If p t e :> ty   -> generateIf ty p t e
-    Lam v e :> _     -> let freeVars = toList $ freeVariables v e
-                            sigs = map (\n -> (n, Ty "int")) freeVars
-                        in generateLambda sigs (functionToDefinitions []) v e
+    _  :< Literal c   -> return . ConstantOperand . generateConstantOperand $ c
+    _  :< Var v       -> getVar v
+    _  :< l :@: r     -> generateApplication l r
+    _  :< BinOp o l r -> generateOperator o l r
+    ty :< If p t e    -> generateIf ty p t e
+    _  :< Lam v e     -> let freeVars = toList $ freeVariables v e
+                             sigs = map (\n -> (n, Ty "int")) freeVars
+                         in generateLambda sigs (functionToDefinitions []) v e
 
 generateConstantOperand :: Constant -> LLVM.Constant
 generateConstantOperand c =

@@ -2,8 +2,6 @@ module Main where
 
 import qualified Lexer
 import qualified Parser
-import           Data.List (intercalate)
-import           Control.Cofree
 
 main :: IO ()
 main = do

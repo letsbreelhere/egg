@@ -16,7 +16,7 @@ module Types.Expr (
 
 import           Types.EType
 import           Types.Constant
-import           Control.Cofree
+import           Control.Comonad.Cofree
 import           Data.Functor.Classes (Eq1, eq1, Show1, showsPrec1)
 
 infixl 9 :@:
@@ -69,19 +69,19 @@ type Expr = Expr' ()
 type ExprTrans t = forall ann. Cofree BareExpr ann -> t
 
 literal :: Constant -> Expr
-literal c = Literal c :> ()
+literal c = () :< Literal c
 
 var :: String -> Expr
-var s = Var s :> ()
+var s = () :< Var s
 
 call :: Expr -> Expr -> Expr
-call l r = l :@: r :> ()
+call l r = () :< l :@: r
 
 binOp :: String -> Expr -> Expr -> Expr
-binOp s l r = BinOp s l r :> ()
+binOp s l r = () :< BinOp s l r
 
 exprIf :: Expr -> Expr -> Expr -> Expr
-exprIf p t e = If p t e :> ()
+exprIf p t e = () :< If p t e
 
 lam :: String -> Expr -> Expr
-lam s e = Lam s e :> ()
+lam s e = () :< Lam s e
