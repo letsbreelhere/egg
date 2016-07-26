@@ -17,6 +17,9 @@ import           Types.Constant
 
 newtype Subst = Subst { unSubst :: Map TV EType }
 
+lookupTV :: Subst -> TV -> Maybe EType
+lookupTV (Subst s) tv = Map.lookup tv s
+
 delete :: TV -> Subst -> Subst
 delete tv (Subst s) = Subst (Map.delete tv s)
 
@@ -51,10 +54,19 @@ instance Monoid Subst where
   mappend s1 s2 = Subst $ Map.map (apply s1) (unSubst s2) `Map.union` unSubst s1
 
 data Scheme = Forall [TV] EType
-  deriving (Eq)
 
 instance Show Scheme where
   show (Forall tvs ty) = "forall " ++ unwords (map show tvs) ++ ". " ++ show ty
+
+instance Eq Scheme where
+  Forall tvs ty == Forall tvs' ty' =
+    let unified = runUnify $ unify ty ty'
+    in case unified of
+         Left _ -> False
+         Right s -> Set.fromList (map (lookupTV s) tvs) == Set.fromList (map (lookupTV s) tvs')
+
+runUnify :: Infer Subst -> Either TypeError Subst
+runUnify m = evalState (runExceptT (unInfer m)) (TV <$> Supply.naturals)
 
 newtype TyContext = TyContext (Map String Scheme)
 
