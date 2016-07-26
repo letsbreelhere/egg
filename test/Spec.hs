@@ -6,6 +6,7 @@ import Test.Compiler
 import Test.Lex
 import Test.Expr
 import Test.Parser
+import Test.Unification
 
 main :: IO ()
 main = defaultMain tests
@@ -13,6 +14,7 @@ main = defaultMain tests
 tests = testGroup "Suite"
   [ lexerSpec
   , parserSpec
-  , compilerSpec
   , exprSpec
+  , unificationSpec
+  , compilerSpec
   ]

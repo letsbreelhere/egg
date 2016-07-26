@@ -3,8 +3,8 @@ module TypeCheck (annotateDef, globalCheckerEnv, CheckerEnv) where
 import           Control.Comonad.Cofree
 import           Types.EType
 import           Types.Expr
-import           Types.FunDef
 import           Types.Constant
+import           Types.FunDef
 
 constantType :: Constant -> EType
 constantType c =
