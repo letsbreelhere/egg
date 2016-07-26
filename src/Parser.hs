@@ -12,41 +12,24 @@ import           Types.EType
 import           Types.Expr
 import qualified Types.Expr as Expr
 import           Types.Constant
-import           Types.FunDef
+import           Types.Declaration
 import           Control.Applicative (many)
 import           Control.Monad (void)
 
 type Parser = Parsec [Token]
 
-parse :: String -> [Token] -> Either ParseError [FunDef ()]
+parse :: String -> [Token] -> Either ParseError [Declaration ()]
 parse = runParser program
 
-program :: Parser [FunDef ()]
+program :: Parser [Declaration ()]
 program = many function <* eof
 
-function :: Parser (FunDef ())
+function :: Parser (Declaration ())
 function = do
   keyword "def"
   name <- anyIdentifier
-  args <- parens parseArgList
-  ret <- typeSignature
   body <- squareBraces expr
-  return (FunDef name args body ret)
-
-typeSignature :: Parser EType
-typeSignature = choice [funTy, Ty <$> anyIdentifier]
-  where
-    funTy = do
-      keyword "func"
-      l <- parens typeSignature
-      r <- parens typeSignature
-      pure (l :-> r)
-
-parseArgList :: Parser [Signature]
-parseArgList = flip sepBy comma $ do
-  arg <- anyIdentifier
-  ty <- typeSignature
-  pure (arg, ty)
+  return (Declaration name body)
 
 expr :: Parser Expr
 expr = makeExprParser expr' table

@@ -1,4 +1,4 @@
-module Unification (runInfer, infer, TyContext, (+>), TypeError(..), Scheme(..)) where
+module Unification (runInfer, infer, Infer, freshVar, TyContext, (+>), TypeError(..), Scheme(..)) where
 
 import           Control.Comonad.Cofree
 import qualified Data.Map as Map

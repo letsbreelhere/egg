@@ -20,9 +20,9 @@ library
                    , Types
                    , Types.BlockState
                    , Types.Constant
+                   , Types.Declaration
                    , Types.Expr
                    , Types.EType
-                   , Types.FunDef
                    , Types.Gen
                    , Types.GeneratorState
                    , Types.Token

@@ -5,7 +5,7 @@ import           Types.Expr (AnnExpr)
 import           Types.EType
 import           Types.Gen (Gen)
 import qualified Types.Gen as Gen
-import           Types.FunDef
+import           Types.Declaration
 import           Control.Lens
 import           Types.GeneratorState
 import           LLVM.General.AST.Type (ptr, i64, Type(..))
@@ -23,13 +23,10 @@ import qualified Data.Map as M
  - cyclic imports, which is HORRIBLE. I think there's a hack to fix that
  - in the GHC docs somewhere.
  -}
-generateLambda :: [(String, EType)] -> (FunDef EType -> Map String Definition) -> String -> AnnExpr -> Gen Operand
-generateLambda freeVars functionToDefinitions v e = do
+generateLambda :: [(String, EType)] -> (Declaration EType -> Map String Definition) -> AnnExpr -> Gen Operand
+generateLambda freeVars functionToDefinitions e = do
   closureName <- ("lam_" ++) <$> Gen.freshNamed
-  let closureArgs = freeVars
-      lambdaArg = (v, Ty "int")
-      retTy = Ty "int"
-      tmpDef = FunDef closureName (lambdaArg : closureArgs) e retTy
+  let tmpDef = Declaration closureName e
       llvmTy = ptr $ FunctionType i64 (i64 : map (const i64) freeVars) False
   closures %= mappend (functionToDefinitions tmpDef)
   closureVars %= M.insert closureName freeVars

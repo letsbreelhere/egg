@@ -16,5 +16,5 @@ tests = testGroup "Suite"
   , parserSpec
   , exprSpec
   , unificationSpec
-  , compilerSpec
+  {-, compilerSpec-}
   ]

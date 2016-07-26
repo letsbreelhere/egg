@@ -4,12 +4,12 @@ import Data.Foldable (toList)
 import           Codegen.LambdaLifting
 import           Control.Comonad.Cofree
 import           Control.Lens hiding ((:<), op)
-import           Control.Monad (forM_)
+import           Control.Monad (forM_, foldM)
 import           Data.Expr (freeVariables)
 import           Data.Map (Map)
 import qualified Data.Map as M
 import           Data.Maybe (fromMaybe)
-import           Types.FunDef
+import           Types.Declaration
 import           Types.EType
 import           TypeCheck
 import           Instructions
@@ -22,27 +22,25 @@ import           Types.Expr (AnnExpr, BareExpr(..))
 import           Types.Gen (Gen)
 import qualified Types.Gen as Gen
 import           Types.GeneratorState
+import           Unification
 
-functionToDefinitions :: Show a => CheckerEnv -> FunDef a -> Map String Definition
-functionToDefinitions env def =
-  let def' = either error id $ annotateDef env def
-      args = _args def'
+initialContext :: [Declaration a] -> Infer TyContext
+initialContext = foldM (\env decl -> do { v <- freshVar; pure (env +> (_name decl, Forall [] v)) }) mempty
+
+declarationToDefinitions :: Show a => CheckerEnv -> Declaration a -> Map String Definition
+declarationToDefinitions env def =
+  let def'@(t :< _) = either error id $ annotateDef env def
       body = _body def'
-      retTy = _ret def'
       name = _name def'
-      (generatedBodyBlocks, cls) = bodyBlocks args body
-      mainFunctionDefn = globalDefinition (reifyAbstractType retTy) name (map sigOf args)
+      (generatedBodyBlocks, cls) = bodyBlocks body
+      mainFunctionDefn = globalDefinition (reifyAbstractType t) name []
                            generatedBodyBlocks
   in M.insert name mainFunctionDefn cls
 
-bodyBlocks :: [Signature] -> AnnExpr -> ([BasicBlock], Map String Definition)
-bodyBlocks args body = createBlocks . Gen.execCodegen $ do
+bodyBlocks :: AnnExpr -> ([BasicBlock], Map String Definition)
+bodyBlocks body = createBlocks . Gen.execCodegen $ do
   entryName <- Gen.addBlock "entry"
   activeBlock .= entryName
-  forM_ args $ \(arg, ty) -> do
-    var <- alloca (reifyAbstractType ty)
-    store var (localReference (Name arg))
-    Gen.assign arg var
   ret =<< genOperand body
 
 sigOf :: Signature -> (Type, Name)
@@ -56,7 +54,7 @@ reifyAbstractType ty =
     Ty "int"  -> i64
     Ty "void" -> void
     Ty t      -> error $ "Encountered unknown type " ++ show t
-    TyVar _   -> error "Type var encountered during reification"
+    TyVar _   -> error "Type variable encountered during reification"
 
 genOperand :: AnnExpr -> Gen Operand
 genOperand expr =
@@ -68,7 +66,7 @@ genOperand expr =
     ty :< If p t e    -> generateIf ty p t e
     _  :< Lam v e     -> let freeVars = toList $ freeVariables v e
                              sigs = map (\n -> (n, Ty "int")) freeVars
-                         in generateLambda sigs (functionToDefinitions []) v e
+                         in generateLambda sigs (declarationToDefinitions []) v e
 
 generateConstantOperand :: Constant -> LLVM.Constant
 generateConstantOperand c =

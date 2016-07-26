@@ -4,7 +4,7 @@ import           Control.Comonad.Cofree
 import           Types.EType
 import           Types.Expr
 import           Types.Constant
-import           Types.FunDef
+import           Types.Declaration
 
 constantType :: Constant -> EType
 constantType c =
@@ -17,18 +17,18 @@ constantType c =
 type Checker a = Either String a
 type CheckerEnv = [(String, EType)]
 
-globalCheckerEnv :: [FunDef a] -> CheckerEnv
+globalCheckerEnv :: [Declaration a] -> CheckerEnv
 globalCheckerEnv = map functionEntry
 
-functionEntry :: FunDef a -> (String, EType)
-functionEntry fd = (_name fd, undefined :-> _ret fd)
+functionEntry :: Declaration a -> (String, EType)
+functionEntry decl = (_name decl, undefined)
 
-annotateDef :: CheckerEnv -> FunDef a -> Checker (FunDef EType)
-annotateDef env fd = (\newBody -> fd { _body = newBody }) <$> annotate env fd (_body fd)
+annotateDef :: CheckerEnv -> Declaration a -> Checker (Declaration EType)
+annotateDef env decl = (\newBody -> decl { _body = newBody }) <$> annotate env decl (_body decl)
 
-annotate :: CheckerEnv -> FunDef a -> ExprTrans (Checker AnnExpr)
+annotate :: CheckerEnv -> Declaration a -> ExprTrans (Checker AnnExpr)
 annotate env cxt e@(_ :< e') = do
-  typed <- resolveType (env ++ _args cxt) e
+  typed <- resolveType env e
   annotated <- sequenceA $ fmap (annotate env cxt) e'
   pure $ typed :< annotated
 
