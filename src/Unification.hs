@@ -16,9 +16,13 @@ import           Types.Expr
 import           Types.Constant
 
 newtype Subst = Subst { unSubst :: Map TV EType }
+  deriving Show
 
-lookupTV :: Subst -> TV -> Maybe EType
-lookupTV (Subst s) tv = Map.lookup tv s
+isIsomorphism :: Subst -> Bool
+isIsomorphism (Subst m) = all isTyVar $ Map.elems m
+  where isTyVar ty = case ty of
+                       TyVar _ -> True
+                       _ -> False
 
 delete :: TV -> Subst -> Subst
 delete tv (Subst s) = Subst (Map.delete tv s)
@@ -55,15 +59,21 @@ instance Monoid Subst where
 
 data Scheme = Forall [TV] EType
 
+closed :: Scheme -> Bool
+closed (Forall tvs ty) = case ty of
+  TyVar tv -> tv `elem` tvs
+  l :-> r -> closed (Forall tvs l) && closed (Forall tvs r)
+  Ty _ -> True
+
 instance Show Scheme where
   show (Forall tvs ty) = "forall " ++ unwords (map show tvs) ++ ". " ++ show ty
 
 instance Eq Scheme where
-  Forall tvs ty == Forall tvs' ty' =
+  sch@(Forall _ ty) == sch'@(Forall _ ty') =
     let unified = runUnify $ unify ty ty'
     in case unified of
          Left _ -> False
-         Right s -> Set.fromList (map (lookupTV s) tvs) == Set.fromList (map (lookupTV s) tvs')
+         Right s -> isIsomorphism s && closed sch && closed sch'
 
 runUnify :: Infer Subst -> Either TypeError Subst
 runUnify m = evalState (runExceptT (unInfer m)) (TV <$> Supply.naturals)

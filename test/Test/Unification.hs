@@ -17,18 +17,17 @@ unificationSpec = testGroup "Type unification"
                       in testInference (lam "x" (var "x"))
                            (Right (Forall [a] (TyVar a :-> TyVar a)))
                     , testCase "higher-order functions" $
-                      let tv = TV 0
-                          tv' = TV 2
+                      let a = TV 0
+                          b = TV 1
                           expr = lam "x" $ lam "y" $ call (var "y") (var "x")
-                          scheme = Forall [tv, tv']
-                                     (TyVar tv :-> (TyVar tv :-> TyVar tv') :-> TyVar tv')
+                          scheme = Forall [a, b]
+                                     (TyVar a :-> (TyVar a :-> TyVar b) :-> TyVar b)
                       in testInference expr (Right scheme)
                     , testCase "infinite types" $
                       let expr = lam "x" $ call (var "x") (var "x")
-                          tv = TV 0
-                          ty = TyVar tv
-                          ty' = TyVar (TV 1)
-                      in testInference expr (Left (InfiniteType tv (ty :-> ty')))
+                          a = TV 0
+                          b = TV 1
+                      in testInference expr (Left (InfiniteType a (TyVar a :-> TyVar b)))
                     , testCase "unbound variables" $
                         testInference (var "x") (Left (Unbound "x"))
                     ]

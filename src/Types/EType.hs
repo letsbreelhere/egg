@@ -13,7 +13,7 @@ infixr 0 :->
 data EType = Ty String
            | TyVar TV
            | EType :-> EType
-  deriving (Eq)
+  deriving (Eq, Ord)
 
 instance Show EType where
   showsPrec _ (Ty t) = showString t
