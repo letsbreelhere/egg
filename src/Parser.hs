@@ -8,7 +8,6 @@ import           Text.Megaparsec.Expr
 import           Text.Megaparsec.Error (ParseError, Message(..))
 import           Types.Token
 import qualified Types.Token as Token
-import           Types.EType
 import           Types.Expr
 import qualified Types.Expr as Expr
 import           Types.Constant
@@ -27,9 +26,7 @@ program = many function <* eof
 function :: Parser (Declaration ())
 function = do
   keyword "def"
-  name <- anyIdentifier
-  body <- squareBraces expr
-  return (Declaration name body)
+  Declaration <$> anyIdentifier <*> squareBraces expr
 
 expr :: Parser Expr
 expr = makeExprParser expr' table

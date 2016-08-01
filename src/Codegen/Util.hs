@@ -28,12 +28,12 @@ initialContext :: [Declaration a] -> Infer TyContext
 initialContext = foldM (\env decl -> do { v <- freshVar; pure (env +> (_name decl, Forall [] v)) }) mempty
 
 declarationToDefinitions :: Show a => CheckerEnv -> Declaration a -> Map String Definition
-declarationToDefinitions env def =
-  let def'@(t :< _) = either error id $ annotateDef env def
-      body = _body def'
-      name = _name def'
+declarationToDefinitions env decl =
+  let decl = either error id $ annotateDef env decl
+      body = _body decl
+      name = _name decl
       (generatedBodyBlocks, cls) = bodyBlocks body
-      mainFunctionDefn = globalDefinition (reifyAbstractType t) name []
+      mainFunctionDefn = globalDefinition name []
                            generatedBodyBlocks
   in M.insert name mainFunctionDefn cls
 
