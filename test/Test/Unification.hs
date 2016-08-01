@@ -6,6 +6,7 @@ import           Types.EType
 import           Types.Expr
 import           Types.Constant
 import           Unification
+import Debug.Trace
 
 unificationSpec :: TestTree
 unificationSpec = testGroup "Type unification"
@@ -33,4 +34,9 @@ unificationSpec = testGroup "Type unification"
                     ]
 
 testInference :: Expr -> Either TypeError Scheme -> Assertion
-testInference expr expected = runInfer (infer mempty expr) @?= expected
+testInference expr expected =
+  let actual = do
+        (scheme, cs) <- runInfer (infer expr)
+        su <- runSolver cs
+        pure (finalApply su scheme)
+  in actual @?= expected
