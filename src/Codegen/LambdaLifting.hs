@@ -1,7 +1,7 @@
 module Codegen.LambdaLifting where
 
 import           LLVM.General.AST (Name(..), Definition, Operand(..))
-import           Types.Expr (AnnExpr)
+import           Types.Expr (Expr)
 import           Types.EType
 import           Types.Gen (Gen)
 import qualified Types.Gen as Gen
@@ -23,10 +23,10 @@ import qualified Data.Map as M
  - cyclic imports, which is HORRIBLE. I think there's a hack to fix that
  - in the GHC docs somewhere.
  -}
-generateLambda :: [(String, EType)] -> (Declaration EType -> Map String Definition) -> AnnExpr -> Gen Operand
+generateLambda :: [(String, EType)] -> (Declaration EType -> Map String Definition) -> Expr -> Gen Operand
 generateLambda freeVars functionToDefinitions e = do
   closureName <- ("lam_" ++) <$> Gen.freshNamed
-  let tmpDef = Declaration closureName e
+  let tmpDef = Declaration closureName e Nothing
       llvmTy = ptr $ FunctionType i64 (i64 : map (const i64) freeVars) False
   closures %= mappend (functionToDefinitions tmpDef)
   closureVars %= M.insert closureName freeVars

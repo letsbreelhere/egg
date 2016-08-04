@@ -6,7 +6,6 @@ import           Types.EType
 import           Types.Expr
 import           Types.Constant
 import           Unification
-import Debug.Trace
 
 unificationSpec :: TestTree
 unificationSpec = testGroup "Type unification"
@@ -21,8 +20,7 @@ unificationSpec = testGroup "Type unification"
                       let a = TV 0
                           b = TV 1
                           expr = lam "x" $ lam "y" $ call (var "y") (var "x")
-                          scheme = Forall [a, b]
-                                     (TyVar a :-> (TyVar a :-> TyVar b) :-> TyVar b)
+                          scheme = Forall [a, b] (TyVar a :-> (TyVar a :-> TyVar b) :-> TyVar b)
                       in testInference expr (Right scheme)
                     , testCase "infinite types" $
                       let expr = lam "x" $ call (var "x") (var "x")
@@ -30,13 +28,13 @@ unificationSpec = testGroup "Type unification"
                           b = TV 1
                       in testInference expr (Left (InfiniteType a (TyVar a :-> TyVar b)))
                     , testCase "unbound variables" $
-                        testInference (var "x") (Left (Unbound "x"))
+                      testInference (var "x") (Left (Unbound "x"))
                     ]
 
 testInference :: Expr -> Either TypeError Scheme -> Assertion
 testInference expr expected =
   let actual = do
-        (scheme, cs) <- runInfer (infer expr)
-        su <- runSolver cs
-        pure (finalApply su scheme)
+                 (scheme, cs) <- runInfer mempty (infer expr)
+                 su <- runSolver cs
+                 pure (finalApply su scheme)
   in actual @?= expected

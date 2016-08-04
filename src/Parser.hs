@@ -26,7 +26,7 @@ program = many function <* eof
 function :: Parser (Declaration ())
 function = do
   keyword "def"
-  Declaration <$> anyIdentifier <*> squareBraces expr
+  Declaration <$> anyIdentifier <*> squareBraces expr <*> pure Nothing
 
 expr :: Parser Expr
 expr = makeExprParser expr' table

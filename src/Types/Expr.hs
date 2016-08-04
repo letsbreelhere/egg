@@ -38,6 +38,9 @@ instance Eq1 BareExpr where
   eq1 (Lam v e) (Lam v' e') = (v, e) == (v', e')
   eq1 _ _ = False
 
+cofreeTraverse :: (Applicative f, Traversable t) => (t (Cofree t a) -> f b) -> Cofree t a -> f (Cofree t b)
+cofreeTraverse f (a :< m) = (:<) <$> f m <*> sequenceA (fmap (cofreeTraverse f) m)
+
 instance Show1 BareExpr where
   showsPrec1 n expr =
     case expr of

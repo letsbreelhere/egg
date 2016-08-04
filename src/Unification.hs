@@ -2,7 +2,7 @@
 
 module Unification (
     runInfer,
-    infer,
+    runInfer',
     Infer,
     freshVar,
     TyContext,
@@ -12,6 +12,7 @@ module Unification (
     runSolver,
     apply,
     finalApply,
+    infer
     ) where
 
 import           Control.Arrow ((***))
@@ -29,61 +30,14 @@ import           Supply (Supply)
 import qualified Supply
 import           Types.Expr
 import           Types.Constant
-
--- Classes
-class Substitutable a where
-  apply :: Subst -> a -> a
-  freeTyVars :: a -> Set TV
-
--- Data types
-newtype Subst = Subst { unSubst :: Map TV EType }
-  deriving Show
-
-newtype TyContext = TyContext (Map String Scheme)
+import Unification.Scheme
+import Unification.Substitutable
+import Unification.TyContext
 
 newtype Infer a =
           Infer
             { unInfer :: RWST TyContext [(EType, EType)] (Supply TV) (Except TypeError) a }
   deriving (Functor, Applicative, Monad, MonadReader TyContext, MonadWriter [(EType, EType)], MonadState (Supply TV), MonadError TypeError)
-
-data Scheme = Forall [TV] EType
-
-data TypeError = InfiniteType TV EType
-               | CantUnify EType EType
-               | Unbound String
-               | Unknown
-  deriving (Eq)
-
--- Instances
-instance Substitutable EType where
-  apply s@(Subst m) t =
-    case t of
-      TyVar tv  -> fromMaybe t $ Map.lookup tv m
-      t1 :-> t2 -> apply s t1 :-> apply s t2
-      _         -> t
-  freeTyVars t =
-    case t of
-      TyVar tv  -> Set.singleton tv
-      t1 :-> t2 -> freeTyVars t1 `Set.union` freeTyVars t2
-      _         -> Set.empty
-
-instance Substitutable Scheme where
-  apply s (Forall tvs t) = Forall tvs $ apply (deletes s tvs) t
-  freeTyVars (Forall tvs t) = freeTyVars t `Set.difference` Set.fromList tvs
-
-instance Monoid Subst where
-  mempty = Subst Map.empty
-  mappend s1 s2 = Subst $ Map.map (apply s1) (unSubst s2) `Map.union` unSubst s1
-
-closed :: Scheme -> Bool
-closed (Forall tvs ty) =
-  case ty of
-    TyVar tv -> tv `elem` tvs
-    l :-> r  -> closed (Forall tvs l) && closed (Forall tvs r)
-    Ty _     -> True
-
-instance Show Scheme where
-  show (Forall tvs ty) = "forall " ++ unwords (map show tvs) ++ ". " ++ show ty
 
 instance Eq Scheme where
   sch@(Forall _ ty) == sch'@(Forall _ ty') =
@@ -99,40 +53,19 @@ instance Eq Scheme where
         TyVar _ -> True
         _       -> False
 
-instance Monoid TyContext where
-  mempty = TyContext mempty
-  mappend (TyContext l) (TyContext r) = TyContext (l <> r)
 
-instance Substitutable TyContext where
-  apply s (TyContext env) = TyContext $ Map.map (apply s) env
-  freeTyVars (TyContext env) = foldMap freeTyVars (Map.elems env)
+data TypeError = InfiniteType TV EType
+               | CantUnify EType EType
+               | Unbound String
+               | Unknown
+  deriving (Eq)
 
-infixl 0 +>
-
-(+>) :: TyContext -> (String, Scheme) -> TyContext
-TyContext cxt +> (v, scheme) = TyContext (Map.insert v scheme cxt)
-
-lookupScheme :: String -> TyContext -> Maybe Scheme
-lookupScheme v (TyContext c) = Map.lookup v c
-
-addContext :: (String, Scheme) -> TyContext -> TyContext
-addContext (x, t) (TyContext env) = TyContext $ Map.insert x t env
 
 instance Show TypeError where
   show (InfiniteType tv ty) = "Can't construct the infinite type " ++ show tv ++ " ~ " ++ show ty
   show (CantUnify t u) = "Can't unify " ++ show t ++ " with " ++ show u
   show (Unbound v) = "Variable " ++ v ++ " is unbound"
   show Unknown = "Unknown expression encountered"
-
--- Functions
-delete :: TV -> Subst -> Subst
-delete tv (Subst s) = Subst (Map.delete tv s)
-
-deletes :: Subst -> [TV] -> Subst
-deletes = foldr delete
-
-singleton :: TV -> EType -> Subst
-singleton tv t = Subst $ Map.singleton tv t
 
 type Unifier = (Subst, [(EType, EType)])
 
@@ -182,9 +115,14 @@ bind v t
   | occursCheck v t = throwError (InfiniteType v t)
   | otherwise = pure (singleton v t, [])
 
-runInfer :: Infer EType -> Either TypeError (Scheme, [(EType, EType)])
-runInfer (Infer m) =
-  case runExcept (evalRWST m mempty tvSupply) of
+runInfer' :: TyContext -> Infer a -> Either TypeError (a, [(EType, EType)])
+runInfer' cxt (Infer m) = runExcept (evalRWST m cxt tvSupply)
+  where
+    tvSupply = TV <$> Supply.naturals
+
+runInfer :: TyContext -> Infer EType -> Either TypeError (Scheme, [(EType, EType)])
+runInfer cxt (Infer m) =
+  case runExcept (evalRWST m cxt tvSupply) of
     Left err -> Left err
     Right (ty, constraints) ->
       let scheme = Forall (Set.toList (freeTyVars ty)) ty

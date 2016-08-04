@@ -1,17 +1,15 @@
 module Codegen.Util where
 
-import Data.Foldable (toList)
-import           Codegen.LambdaLifting
+import           Data.Foldable (toList)
 import           Control.Comonad.Cofree
 import           Control.Lens hiding ((:<), op)
-import           Control.Monad (forM_, foldM)
+import           Control.Monad (foldM)
 import           Data.Expr (freeVariables)
 import           Data.Map (Map)
 import qualified Data.Map as M
 import           Data.Maybe (fromMaybe)
 import           Types.Declaration
 import           Types.EType
-import           TypeCheck
 import           Instructions
 import           LLVM (globalDefinition)
 import           LLVM.General.AST (Name(..), Definition, Operand(..), BasicBlock, Type)
@@ -25,17 +23,14 @@ import           Types.GeneratorState
 import           Unification
 
 initialContext :: [Declaration a] -> Infer TyContext
-initialContext = foldM (\env decl -> do { v <- freshVar; pure (env +> (_name decl, Forall [] v)) }) mempty
+initialContext = foldM f mempty
+  where
+    f env decl = do
+      v <- freshVar
+      pure (env +> (_name decl, Forall [] v))
 
-declarationToDefinitions :: Show a => CheckerEnv -> Declaration a -> Map String Definition
-declarationToDefinitions env decl =
-  let decl = either error id $ annotateDef env decl
-      body = _body decl
-      name = _name decl
-      (generatedBodyBlocks, cls) = bodyBlocks body
-      mainFunctionDefn = globalDefinition name []
-                           generatedBodyBlocks
-  in M.insert name mainFunctionDefn cls
+assembleDeclarations :: [Declaration ()] -> [Definition]
+assembleDeclarations = undefined
 
 bodyBlocks :: AnnExpr -> ([BasicBlock], Map String Definition)
 bodyBlocks body = createBlocks . Gen.execCodegen $ do
@@ -59,14 +54,15 @@ reifyAbstractType ty =
 genOperand :: AnnExpr -> Gen Operand
 genOperand expr =
   case expr of
-    _  :< Literal c   -> return . ConstantOperand . generateConstantOperand $ c
-    _  :< Var v       -> getVar v
-    _  :< l :@: r     -> generateApplication l r
-    _  :< BinOp o l r -> generateOperator o l r
-    ty :< If p t e    -> generateIf ty p t e
-    _  :< Lam v e     -> let freeVars = toList $ freeVariables v e
-                             sigs = map (\n -> (n, Ty "int")) freeVars
-                         in generateLambda sigs (declarationToDefinitions []) v e
+    _ :< Literal c -> return . ConstantOperand . generateConstantOperand $ c
+    _ :< Var v -> getVar v
+    _ :< l :@: r -> generateApplication l r
+    _ :< BinOp o l r -> generateOperator o l r
+    ty :< If p t e -> generateIf ty p t e
+    _ :< Lam v e ->
+      let freeVars = toList $ freeVariables v e
+          sigs = map (\n -> (n, Ty "int")) freeVars
+      in undefined
 
 generateConstantOperand :: Constant -> LLVM.Constant
 generateConstantOperand c =
@@ -79,16 +75,19 @@ generateApplication :: AnnExpr -> AnnExpr -> Gen Operand
 generateApplication l r = do
   fn <- genOperand l
   lamarg <- genOperand r
-  let fname = case fn of
-                ConstantOperand (LLVM.GlobalReference _ (Name name)) -> Just name
-                _ -> Nothing
+  let fname =
+        case fn of
+          ConstantOperand (LLVM.GlobalReference _ (Name name)) -> Just name
+          _                                                    -> Nothing
   closureArgSigs <- case fname of
-    Just name -> uses closureVars (M.lookup name)
-    Nothing   -> pure Nothing
+                      Just name -> uses closureVars (M.lookup name)
+                      Nothing   -> pure Nothing
   closureEnv <- fetchClosureOperands (fromMaybe [] closureArgSigs)
   call fn lamarg closureEnv
-  where fetchClosureOperands :: [(String, EType)] -> Gen [Operand]
-        fetchClosureOperands = traverse (getVar . fst)
+
+  where
+    fetchClosureOperands :: [(String, EType)] -> Gen [Operand]
+    fetchClosureOperands = traverse (getVar . fst)
 
 generateIf :: EType -> AnnExpr -> AnnExpr -> AnnExpr -> Gen Operand
 generateIf ty p t e = do
