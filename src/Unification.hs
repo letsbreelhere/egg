@@ -135,7 +135,7 @@ instantiate (Forall tvs ty) = do
 
 lookupContext :: String -> TyContext -> Infer EType
 lookupContext s env =
-  case lookupScheme s env of
+  case lookupCxt s env of
     Nothing     -> throwError (Unbound s)
     Just scheme -> instantiate scheme
 

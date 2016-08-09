@@ -30,7 +30,7 @@ initialContext = foldM f mempty
       pure (env +> (_name decl, Forall [] v))
 
 assembleDeclarations :: [Declaration ()] -> [Definition]
-assembleDeclarations = undefined
+assembleDeclarations = error "assembleDeclarations"
 
 bodyBlocks :: AnnExpr -> ([BasicBlock], Map String Definition)
 bodyBlocks body = createBlocks . Gen.execCodegen $ do
@@ -62,7 +62,7 @@ genOperand expr =
     _ :< Lam v e ->
       let freeVars = toList $ freeVariables v e
           sigs = map (\n -> (n, Ty "int")) freeVars
-      in undefined
+      in error "genOperand"
 
 generateConstantOperand :: Constant -> LLVM.Constant
 generateConstantOperand c =

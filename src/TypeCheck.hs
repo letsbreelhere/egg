@@ -8,7 +8,7 @@ import           Unification
 
 globalAnnotate :: [Declaration a] -> Either TypeError [(Declaration a, Scheme)]
 globalAnnotate decls = do
-  ((ds, cs), cs') <- runInfer' mempty (undefined) --globalAnnotate' decls)
+  ((ds, cs), cs') <- runInfer' mempty (error "globalAnnotate") --globalAnnotate' decls)
   su <- runSolver (cs <> cs')
   pure $ map (second (finalApply su)) ds
 
