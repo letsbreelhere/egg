@@ -1,2 +1,2 @@
-def foo(i int) int [ i + 30 ]
-def main() int [ `foo 12 ]
+def foo [ i + 30 ]
+def main [ `foo 12 ]

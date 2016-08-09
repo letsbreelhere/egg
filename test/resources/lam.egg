@@ -1,7 +1,7 @@
-def lam(i int) func (int) (int) [
+def lam [
   ^ x -> 42
 ]
 
-def main() int [
+def main [
   ``lam 23 6
 ]

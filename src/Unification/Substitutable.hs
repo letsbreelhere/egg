@@ -1,12 +1,17 @@
+{-# LANGUAGE FlexibleInstances #-}
+
 module Unification.Substitutable where
 
+import           Data.Foldable (toList)
 import           Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
 import           Data.Set (Set)
 import qualified Data.Map as Map
 import           Data.Map (Map)
 import           Types.EType
+import           Types.Expr (BareExpr)
 import Unification.Scheme
+import Control.Comonad.Cofree
 
 class Substitutable a where
   apply :: Subst -> a -> a
@@ -34,6 +39,10 @@ instance Substitutable Scheme where
 instance Monoid Subst where
   mempty = Subst Map.empty
   mappend s1 s2 = Subst $ Map.map (apply s1) (unSubst s2) `Map.union` unSubst s1
+
+instance Substitutable (Cofree BareExpr EType) where
+  apply s (t :< e) = apply s t :< fmap (apply s) e
+  freeTyVars (t :< e) = Set.unions (freeTyVars t : toList (fmap freeTyVars e))
 
 delete :: TV -> Subst -> Subst
 delete tv (Subst s) = Subst (Map.delete tv s)

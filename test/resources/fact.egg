@@ -1,10 +1,10 @@
-def fact(i int) int [
+def fact [
   if i > 0 [ i * `fact (i-1) ]
       else [ 1 ]
 ]
 
-def normalize(i int) int [
+def normalize [
   i - 78
 ]
 
-def main() int [ `normalize `fact 5 ]
+def main [ `normalize `fact 5 ]

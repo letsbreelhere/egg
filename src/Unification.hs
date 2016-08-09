@@ -12,17 +12,14 @@ module Unification (
     runSolver,
     apply,
     finalApply,
-    infer
+    infer,
     ) where
 
 import           Control.Arrow ((***))
 import           Control.Comonad.Cofree
 import           Control.Monad.RWS
 import qualified Data.Map as Map
-import           Data.Map (Map)
-import           Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
-import           Data.Set (Set)
 import           Types.EType
 import           Control.Monad.Except (MonadError, Except, runExcept, throwError)
 import           Control.Monad.State (evalStateT, StateT)
@@ -30,14 +27,14 @@ import           Supply (Supply)
 import qualified Supply
 import           Types.Expr
 import           Types.Constant
-import Unification.Scheme
-import Unification.Substitutable
-import Unification.TyContext
+import           Unification.Scheme
+import           Unification.Substitutable
+import           Unification.TyContext
 
-newtype Infer a =
-          Infer
-            { unInfer :: RWST TyContext [(EType, EType)] (Supply TV) (Except TypeError) a }
-  deriving (Functor, Applicative, Monad, MonadReader TyContext, MonadWriter [(EType, EType)], MonadState (Supply TV), MonadError TypeError)
+type Constraint = (EType, EType)
+
+newtype Infer a = Infer (RWST TyContext [Constraint] (Supply TV) (Except TypeError) a)
+  deriving (Functor, Applicative, Monad, MonadReader TyContext, MonadWriter [Constraint], MonadState (Supply TV), MonadError TypeError)
 
 instance Eq Scheme where
   sch@(Forall _ ty) == sch'@(Forall _ ty') =
@@ -53,13 +50,11 @@ instance Eq Scheme where
         TyVar _ -> True
         _       -> False
 
-
 data TypeError = InfiniteType TV EType
                | CantUnify EType EType
                | Unbound String
                | Unknown
   deriving (Eq)
-
 
 instance Show TypeError where
   show (InfiniteType tv ty) = "Can't construct the infinite type " ++ show tv ++ " ~ " ++ show ty
@@ -67,14 +62,14 @@ instance Show TypeError where
   show (Unbound v) = "Variable " ++ v ++ " is unbound"
   show Unknown = "Unknown expression encountered"
 
-type Unifier = (Subst, [(EType, EType)])
+type Unifier = (Subst, [Constraint])
 
 type Solve a = StateT Unifier (Except TypeError) a
 
 runSolve :: Solve a -> Either TypeError a
 runSolve m = runExcept (evalStateT m mempty)
 
-runSolver :: [(EType, EType)] -> Either TypeError Subst
+runSolver :: [Constraint] -> Either TypeError Subst
 runSolver cs = runSolve $ solver (mempty, cs)
 
 finalApply :: Subst -> Scheme -> Scheme
@@ -90,7 +85,7 @@ unifies t (TyVar tv) = bind tv t
 unifies (l :-> r) (l' :-> r') = unifyMany [(l, l'), (r, r')]
 unifies t t' = throwError (CantUnify t t')
 
-unifyMany :: [(EType, EType)] -> Solve Unifier
+unifyMany :: [Constraint] -> Solve Unifier
 unifyMany [] = pure mempty
 unifyMany ((t, t'):ts) = do
   (s, cs) <- unifies t t'
@@ -115,20 +110,13 @@ bind v t
   | occursCheck v t = throwError (InfiniteType v t)
   | otherwise = pure (singleton v t, [])
 
-runInfer' :: TyContext -> Infer a -> Either TypeError (a, [(EType, EType)])
+runInfer' :: TyContext -> Infer a -> Either TypeError (a, [Constraint])
 runInfer' cxt (Infer m) = runExcept (evalRWST m cxt tvSupply)
   where
     tvSupply = TV <$> Supply.naturals
 
-runInfer :: TyContext -> Infer EType -> Either TypeError (Scheme, [(EType, EType)])
-runInfer cxt (Infer m) =
-  case runExcept (evalRWST m cxt tvSupply) of
-    Left err -> Left err
-    Right (ty, constraints) ->
-      let scheme = Forall (Set.toList (freeTyVars ty)) ty
-      in Right (scheme, constraints)
-  where
-    tvSupply = TV <$> Supply.naturals
+runInfer :: TyContext -> Infer AnnExpr -> Either TypeError (AnnExpr, [Constraint])
+runInfer = runInfer'
 
 occursCheck :: TV -> EType -> Bool
 occursCheck tv ty = tv `Set.member` freeTyVars ty
@@ -157,28 +145,28 @@ inferConstant (C _) = Ty "char"
 inferConstant (B _) = Ty "bool"
 inferConstant Unit = Ty "unit"
 
-infer :: ExprTrans (Infer EType)
+infer :: ExprTrans (Infer AnnExpr)
 infer (_ :< expr) =
   case expr of
-    Var v -> lookupContext v =<< ask
-    Literal c -> pure (inferConstant c)
+    Var v -> fmap (\t -> t :< Var v) $ lookupContext v =<< ask
+    Literal c -> pure $ inferConstant c :< Literal c
     l :@: r -> do
       tv <- freshVar
-      t <- infer l
-      t' <- infer r
+      l'@(t :< _) <- infer l
+      r'@(t' :< _) <- infer r
       unify t (t' :-> tv)
-      pure tv
+      pure (tv :< l' :@: r')
     If p thn els -> do
-      t <- infer p
-      t' <- infer thn
-      t'' <- infer els
+      p'@(t :< _) <- infer p
+      thn'@(t' :< _) <- infer thn
+      els'@(t'' :< _) <- infer els
       unify t (Ty "bool")
       unify t' t''
-      pure t'
+      pure (t' :< If p' thn' els')
     Lam v e -> do
       tv <- freshVar
-      t <- inEnv (v, Forall [] tv) (infer e)
-      pure (tv :-> t)
+      e'@(t :< _) <- inEnv (v, Forall [] tv) (infer e)
+      pure ((tv :-> t) :< Lam v e')
     _ -> throwError Unknown
 
 inEnv :: (String, Scheme) -> Infer a -> Infer a

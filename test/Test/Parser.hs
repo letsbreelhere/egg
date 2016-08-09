@@ -5,27 +5,26 @@ import qualified Parser
 import           Test.Tasty
 import           Test.Tasty.HUnit
 import           Types.Constant
-import           Types.EType
 import           Types.Expr
-import           Types.FunDef
+import           Types.Declaration
 
+parserSpec :: TestTree
 parserSpec = testGroup "Parser"
   [
     testCase "parsing a single function definition" $
       testParser
-        (unlines [ "def const(i int) func (int) (int) ["
+        (unlines [ "def const ["
                  , "  ^ x -> 42"
                  , "]"
                  ]
         )
-        [ FunDef
+        [ Declaration
             { _name = "const"
-            , _args = [("i", Ty "int")]
             , _body = lam "x" (literal (I 42))
-            , _ret  = Ty "int" :-> Ty "int"
+            , _ann = Nothing
             }
         ]
   ]
 
-testParser :: String -> [FunDef ()] -> Assertion
+testParser :: String -> [Declaration ()] -> Assertion
 testParser input expected = (Parser.parse "" =<< Lexer.lex "" input) @?= Right expected
