@@ -5,6 +5,7 @@ import           Types.EType
 data Scheme = Forall [TV] EType
 
 instance Show Scheme where
+  show (Forall [] ty) = show ty
   show (Forall tvs ty) = "forall " ++ unwords (map show tvs) ++ ". " ++ show ty
 
 closed :: Scheme -> Bool

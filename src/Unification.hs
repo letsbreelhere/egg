@@ -13,6 +13,8 @@ module Unification (
     apply,
     finalApply,
     infer,
+    typeOf,
+    annotate
     ) where
 
 import           Control.Arrow ((***))
@@ -65,6 +67,16 @@ instance Show TypeError where
 type Unifier = (Subst, [Constraint])
 
 type Solve a = StateT Unifier (Except TypeError) a
+
+annotate :: Expr' a -> Either TypeError AnnExpr
+annotate expr = fst <$> runInfer mempty (infer expr)
+
+typeOf :: Expr' a -> Either TypeError Scheme
+typeOf expr = do
+  (t :< _, cs) <- runInfer mempty (infer expr)
+  su <- runSolver cs
+  a <- pure (apply su t)
+  pure $ Forall (Set.toList $ freeTyVars a) a
 
 runSolve :: Solve a -> Either TypeError a
 runSolve m = runExcept (evalStateT m mempty)

@@ -3,7 +3,6 @@ module Codegen.Util where
 import           Data.Foldable (toList)
 import           Control.Comonad.Cofree
 import           Control.Lens hiding ((:<), op)
-import           Control.Monad (foldM)
 import           Data.Expr (freeVariables)
 import           Data.Map (Map)
 import qualified Data.Map as M
@@ -11,7 +10,6 @@ import           Data.Maybe (fromMaybe)
 import           Types.Declaration
 import           Types.EType
 import           Instructions
-import           LLVM (globalDefinition)
 import           LLVM.General.AST (Name(..), Definition, Operand(..), BasicBlock, Type)
 import           LLVM.General.AST.Type (ptr, void, i64, i1, Type(..))
 import qualified LLVM.General.AST.Constant as LLVM
@@ -20,17 +18,6 @@ import           Types.Expr (AnnExpr, BareExpr(..))
 import           Types.Gen (Gen)
 import qualified Types.Gen as Gen
 import           Types.GeneratorState
-import           Unification
-
-initialContext :: [Declaration a] -> Infer TyContext
-initialContext = foldM f mempty
-  where
-    f env decl = do
-      v <- freshVar
-      pure (env +> (_name decl, Forall [] v))
-
-assembleDeclarations :: [Declaration ()] -> [Definition]
-assembleDeclarations = error "assembleDeclarations"
 
 bodyBlocks :: AnnExpr -> ([BasicBlock], Map String Definition)
 bodyBlocks body = createBlocks . Gen.execCodegen $ do

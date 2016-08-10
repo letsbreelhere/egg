@@ -1,4 +1,4 @@
-module Parser (parse) where
+module Parser (parse, parseExpr) where
 
 import           Text.Megaparsec.Prim hiding (token, parse)
 import qualified Text.Megaparsec.Prim as Prim
@@ -19,6 +19,9 @@ type Parser = Parsec [Token]
 
 parse :: String -> [Token] -> Either ParseError [Declaration ()]
 parse = runParser program
+
+parseExpr :: String -> [Token] -> Either ParseError Expr
+parseExpr = runParser expr
 
 program :: Parser [Declaration ()]
 program = many function <* eof

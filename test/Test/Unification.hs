@@ -1,14 +1,11 @@
 module Test.Unification where
 
-import           Control.Comonad.Cofree
 import           Test.Tasty
 import           Test.Tasty.HUnit
 import           Types.Constant
 import           Types.EType
 import           Types.Expr
 import           Unification
-import           Unification.Substitutable (freeTyVars)
-import qualified Data.Set as Set
 
 unificationSpec :: TestTree
 unificationSpec = testGroup "Type unification"
@@ -35,10 +32,4 @@ unificationSpec = testGroup "Type unification"
                     ]
 
 testInference :: Expr -> Either TypeError Scheme -> Assertion
-testInference expr expected =
-  let actual = do
-                 (t :< _, cs) <- runInfer mempty (infer expr)
-                 su <- runSolver cs
-                 a <- pure (apply su t)
-                 pure $ Forall (Set.toList $ freeTyVars a) a
-  in actual @?= expected
+testInference expr expected = typeOf expr @?= expected

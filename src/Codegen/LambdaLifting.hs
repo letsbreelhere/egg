@@ -23,7 +23,7 @@ import qualified Data.Map as M
  - cyclic imports, which is HORRIBLE. I think there's a hack to fix that
  - in the GHC docs somewhere.
  -}
-generateLambda :: [(String, EType)] -> (Declaration EType -> Map String Definition) -> Expr -> Gen Operand
+generateLambda :: [(String, EType)] -> (Declaration () -> Map String Definition) -> Expr -> Gen Operand
 generateLambda freeVars functionToDefinitions e = do
   closureName <- ("lam_" ++) <$> Gen.freshNamed
   let tmpDef = Declaration closureName e Nothing

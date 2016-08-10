@@ -1,13 +1,13 @@
 module Types.Declaration where
 
-import           Types.Expr (Expr)
+import           Types.Expr (Expr')
 import           Types.EType (EType)
 
 type Signature = (String, EType)
 
 data Declaration ann = Declaration
   { _name :: String
-  , _body :: Expr
+  , _body :: Expr' ann
   , _ann  :: Maybe EType
   }
   deriving Eq
