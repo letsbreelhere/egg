@@ -5,8 +5,6 @@ module Unification (
     runInfer',
     Infer,
     freshVar,
-    TyContext,
-    (+>),
     TypeError(..),
     Scheme(..),
     runSolver,

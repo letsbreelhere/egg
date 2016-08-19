@@ -16,7 +16,6 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:   Data.Expr
-                   , TypeCheck
                    , Types
                    , Types.BlockState
                    , Types.Constant
@@ -55,6 +54,7 @@ library
             , GeneralizedNewtypeDeriving
             , DeriveFoldable
             , DeriveTraversable
+            , LambdaCase
   default-language:    Haskell2010
   ghc-options: -Wall
 

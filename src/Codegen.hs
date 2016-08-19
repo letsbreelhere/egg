@@ -1,16 +1,17 @@
 module Codegen (LlvmError, toAssembly) where
 
+import           Codegen.Util
+import           Control.Lens ((&))
 import           Control.Monad (foldM, replicateM, void)
 import           Control.Monad.Except (runExceptT)
-import           Types.Declaration
+import           Data.Bifunctor (first)
 import           LLVM (generateModule, globalDefinition)
+import           LLVM.General.AST (Definition)
 import           LLVM.General.Context (withContext)
 import           LLVM.General.Module (withModuleFromAST, moduleLLVMAssembly)
-import           Data.Bifunctor (first)
-import           Codegen.Util
+import           Types.Declaration
 import           Unification
-import           LLVM.General.AST (Definition)
-import           Types.EType
+import           Unification.TyContext
 
 newtype LlvmError = LlvmError String
   deriving (Show)
@@ -27,8 +28,8 @@ assembleDeclarations ds = error "assembleDeclarations" $ typecheck ds
 typecheck :: [Declaration ()] -> Either TypeError [Declaration Scheme]
 typecheck ds = do
   let tyContext = initialContext ds
-  -- HACK: to avoid type var collisions from the initial context we need to bump
-  -- the supply. Not sure how to start with a different supply from `mempty`?
+  -- HACK: to avoid type var collisions from the initial context we need to bump the supply. Not sure
+  -- how to start with a different supply from `mempty`?
   fst <$> runInfer' tyContext (bumpSupply (length ds) >> mapM typeDeclaration ds)
 
 bumpSupply :: Int -> Infer ()
@@ -37,9 +38,10 @@ bumpSupply n = void $ replicateM n freshVar
 initialContext :: [Declaration a] -> TyContext
 initialContext ds =
   let inferContext = foldM f mempty ds
-      Right (inferred, cs) = runInfer' mempty inferContext
-  in inferred
- where
-  f env decl = do
-    v <- freshVar
-    pure (env +> (_name decl, Forall [] v))
+  in runInfer' mempty inferContext & \case
+       Right (inferred', []) -> inferred'
+       _                     -> error "Error during initial declaration context generation!"
+  where
+    f env decl = do
+      v <- freshVar
+      pure (env +> (_name decl, Forall [] v))
