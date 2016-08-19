@@ -14,7 +14,8 @@ module Unification (
     finalApply,
     infer,
     typeOf,
-    annotate
+    annotate,
+    typeDeclaration,
     ) where
 
 import           Control.Arrow ((***))
@@ -27,6 +28,7 @@ import           Control.Monad.Except (MonadError, Except, runExcept, throwError
 import           Control.Monad.State (evalStateT, StateT)
 import           Supply (Supply)
 import qualified Supply
+import           Types.Declaration
 import           Types.Expr
 import           Types.Constant
 import           Unification.Scheme
@@ -77,6 +79,18 @@ typeOf expr = do
   su <- runSolver cs
   a <- pure (apply su t)
   pure $ Forall (Set.toList $ freeTyVars a) a
+
+typeDeclaration :: Declaration a -> Infer (Declaration Scheme)
+typeDeclaration d = do
+  typedExpr <- infer (_body d)
+  pure $ d { _body = close typedExpr }
+
+  where
+    close :: AnnExpr -> Expr' Scheme
+    close (t :< e) = close' t :< fmap close e
+
+    close' :: EType -> Scheme
+    close' t = Forall (Set.toList $ freeTyVars t) t
 
 runSolve :: Solve a -> Either TypeError a
 runSolve m = runExcept (evalStateT m mempty)
